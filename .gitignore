@@ -1,3 +1,12 @@
 
 *.xml
 *.xml
+.idea/*
+Proj_PR_serv/.vs/*
+Proj_PR_serv/Debug/*
+Proj_PR_serv/x64/*
+Proj_PR_serv/*.sln
+Proj_PR_serv/*.filters
+Proj_PR_serv/*.user
+*.vcxproj
+.idea/workspace.xml

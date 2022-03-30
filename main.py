@@ -1,4 +1,5 @@
-import antigravity
-import this
+from game import Game
 
-print("Hello world!")
+my_game = Game()
+my_game.setup()
+my_game.play()

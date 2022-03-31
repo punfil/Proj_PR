@@ -22,11 +22,10 @@ class Game:
         self._board = Board(self._width, self._height)
         pygame.init()
         pygame.display.set_caption("Project - Distracted Programming")
-        self._textures['grass'] = pygame.transform.scale(pygame.image.load(constants.grass_jpg), (1, 1))
+        self._textures['grass'] = pygame.transform.scale(pygame.image.load(constants.grass_jpg), (50, 50))
         for x in range(self._width):
             for y in range(self._height):
-                self._board.setUpPile(x, y,
-                                      Grass(x, y, None, self._textures["grass"]))  # For now no tank will be available
+                self._board.setUpPile(x, y, Grass(x, y, None, self._textures["grass"]))  # For now no tank will be available
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
         self._background = pygame.Surface((self._width, self._height))
 
@@ -39,6 +38,7 @@ class Game:
                     running = False
             for x in range(self._width):
                 for y in range(self._height):
-                    self._screen.blit(self._board.getPile(x, y).texture, (x, y))
+                    if x % 50 == 0 and y % 50 == 0:
+                        self._screen.blit(self._board.getPile(x, y).texture, (x, y))
             pygame.display.flip()
-        sys.exit(0)
+        sys.exit()

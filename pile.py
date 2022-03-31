@@ -11,7 +11,7 @@ class Pile(ABC):
     # Getter of x
     @property
     def x(self):
-        return self._X
+        return self._x
 
     @x.setter
     def x(self, value):

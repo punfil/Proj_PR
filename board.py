@@ -4,11 +4,12 @@ class Board:
         self._width = width
         self._board = [[None for x in range(height)] for y in range(width)]  # Initialize the board
 
-    def setUpPile(self, x, y, pile):
-        self._board[x][y] = pile
+    def setUpTile(self, x, y, tile):
+        self._board[x][y] = tile
 
-    def getPile(self, x, y):
+    def getTile(self, x, y):
         return self._board[x][y]
+
     @property
     def height(self):
         return self._height

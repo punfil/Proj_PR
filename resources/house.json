@@ -1,0 +1,8 @@
+{
+    "texture": "house.png",
+    "blocks_movement":  true,
+    "blocks_bullets": true,
+    "destructible": true,
+    "hp": 1,
+    "spawn_tile_on_death": "grass.json"
+}

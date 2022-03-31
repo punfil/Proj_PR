@@ -1,0 +1,8 @@
+{
+	"texture": "grass.png",
+	"move_speed": 100,
+	"visibility": 255,
+	"blocks_movement":  false,
+	"blocks_bullets": false,
+    "destructible": false
+}

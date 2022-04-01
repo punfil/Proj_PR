@@ -1,3 +1,5 @@
+# Meant to be deleted, left IDK what for
+
 class TankBoard:
     def __init__(self, width, height):
         self._height = height

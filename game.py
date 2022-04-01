@@ -1,6 +1,7 @@
 from board import TankBoard
 from tile import Tile
 from background_board import BackgroundBoard
+from tank import Tank
 import pygame
 import sys
 import constants
@@ -12,12 +13,16 @@ import time
 
 class Game:
     def __init__(self):
-        self._tank_board = None
-        self._health_points = 100  # Game is something like instance of a player
         self._screen = None
         self._tiles = {}  # Here the textures are loaded
         self._width = None
         self._height = None
+        self._player_count = None
+
+        # Tank related variables
+        self._tanks = None
+        self._tanks_sprites = None
+        self._tanks_sprites_group = None
 
         # Background - here are objects to be displayed. Only ints are allowed
         self._background_board = None
@@ -30,7 +35,10 @@ class Game:
         self._width = 800  # Those values need to be downloaded from socket
         self._height = 600
         self._background_scale = 50
-        self._tank_board = TankBoard(self._width, self._height)
+        self._player_count = 1
+        tank_spawn_x = 500
+        tank_spawn_y = 500  # Can be random received from server or constant spawn point
+
         self._background_board = BackgroundBoard(self._width, self._height, self._background_scale)
 
         pygame.init()
@@ -52,6 +60,19 @@ class Game:
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
         self._background_surface = pygame.Surface((self._width, self._height))
         self._clock = pygame.time.Clock()
+
+        # Tank setup - Will even the tank class be required? No one knows...
+        _ = self.load_tile("./resources/tank.json")
+        self._tanks_sprites_group = pygame.sprite.Group()
+        self._tanks = [None for _ in range(self._player_count)]
+        self._tanks_sprites = [None for _ in range(self._player_count)]
+        for i in range(self._player_count):
+            self._tanks[i] = Tank(i, tank_spawn_x, tank_spawn_y)
+            tank = pygame.sprite.Sprite()
+            tank.image = self._tiles["./resources/tank.json"]["texture"]
+            tank.rect = (self._tanks[i].x, self._tanks[i].y)
+            self._tanks_sprites_group.add(tank)
+            self._tanks_sprites[i] = tank
 
     def load_tile(self, filename):
         tile = self._tiles.get(filename)
@@ -75,15 +96,6 @@ class Game:
     def play(self):
         self.draw_background_surface()
 
-        x = 500
-        y = 500
-        tank = pygame.sprite.Sprite()
-        _ = self.load_tile("./resources/tank.json")
-        tank.image = self._tiles["./resources/tank.json"]["texture"]
-        sprite_group = pygame.sprite.Group()
-        sprite_group.add(tank)
-        tank.rect = (x, y)
-
         while True:
             self._clock.tick()
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
@@ -91,15 +103,21 @@ class Game:
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
                     pygame.quit()
                     sys.exit(0)
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                self._tanks[0].offsetX(-constants.default_movement_speed)
+            if keys[pygame.K_RIGHT]:
+                self._tanks[0].offsetX(constants.default_movement_speed)
+            if keys[pygame.K_UP]:
+                self._tanks[0].offsetY(-constants.default_movement_speed)
+            if keys[pygame.K_DOWN]:
+                self._tanks[0].offsetY(constants.default_movement_speed)
 
-            # test:
-            sprite_group.clear(self._screen, self._background_surface)
-            x += random.randint(-1, 1)
-            y += random.randint(-1, 1)
-            tank.rect = (x, y)
-            sprite_group.draw(self._screen)
 
-            self._screen.blit(tank.image, (x, y))
+            self._tanks_sprites_group.clear(self._screen, self._background_surface)
+            self._tanks_sprites_group.draw(self._screen)
+            for i in range(self._player_count):
+                self._screen.blit(self._tanks_sprites[i].image, (self._tanks[i].x, self._tanks[i].y))
             # test^
 
             pygame.display.flip()

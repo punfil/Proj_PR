@@ -1,8 +1,8 @@
-class Board:
+class TankBoard:
     def __init__(self, width, height):
         self._height = height
         self._width = width
-        self._board = [[None for x in range(height)] for y in range(width)]  # Initialize the board
+        self._board = [[None for _ in range(height)] for _ in range(width)]  # Initialize the board
 
     def setUpTile(self, x, y, tile):
         self._board[x][y] = tile
@@ -18,7 +18,7 @@ class Board:
     def height(self, value):
         self._height = value
 
-
     @property
     def width(self):
         return self._width
+

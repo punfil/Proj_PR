@@ -45,4 +45,4 @@ class Tank:
         return self._hp
 
     def offsetHP(self, value):
-        self._jp += value
+        self._hp += value

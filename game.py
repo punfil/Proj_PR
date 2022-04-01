@@ -84,15 +84,13 @@ class Game:
         sprite_group.add(tank)
         tank.rect = (x, y)
 
-        running = True
-        while running:
+        while True:
             self._clock.tick()
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
                     pygame.quit()
                     sys.exit(0)
-                    running = False
 
             # test:
             sprite_group.clear(self._screen, self._background_surface)

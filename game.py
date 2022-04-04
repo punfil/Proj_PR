@@ -25,7 +25,6 @@ class Game:
 
         # Background - here are objects to be displayed. Only int sizes are allowed
         self._background_board = None
-        self._background_surface = None
         self._background_scale = None
 
         self._clock = None
@@ -46,7 +45,6 @@ class Game:
         pygame.display.set_caption("Project - Distracted Programming")
 
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
-        self._background_surface = pygame.Surface((self._width, self._height))
         self._clock = pygame.time.Clock()
 
         # Tank setup - Will even the tank class be required? No one knows...
@@ -115,7 +113,7 @@ class Game:
                 randy = random.randint(0, self._background_board.height-1)
                 self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
 
-            self._tanks_sprites_group.clear(self._screen, self._background_surface)
+            self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._tanks_sprites_group.draw(self._screen)
             for i in range(self._player_count):
                 self._screen.blit(self._tanks_sprites[i].image, (self._tanks[i].x, self._tanks[i].y))

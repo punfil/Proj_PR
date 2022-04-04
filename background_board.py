@@ -62,3 +62,7 @@ class BackgroundBoard:
     @scale.setter
     def scale(self, value):
         self._scale = value
+
+    @property
+    def background_surface(self):
+        return self._background_surface

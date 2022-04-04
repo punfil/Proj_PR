@@ -1,12 +1,8 @@
-from abc import ABC
-
-
-class Tile(ABC):
-    def __init__(self, x, y, texture):
-        # todo change texture to file and/or set all parameters from json file as self variables (not sure if necessary)
+class Tile:
+    def __init__(self, x, y, attributes):
         self._x = x
         self._y = y
-        self._texture = texture
+        self._attributes = attributes  # dict containing the texture, movement speed, visibility, etc, of a tile
 
     # Getter of x
     @property
@@ -26,7 +22,9 @@ class Tile(ABC):
     def y(self, value):
         self._y = value
 
-    @property
-    def texture(self):
-        return self._texture
+    def get_attribute(self, attribute_name):
+        return self._attributes[attribute_name]  # todo maybe replace with self._attributes.get(attribute_name)
 
+    def set_attribute(self, attribute_name, new_value):
+        self._attributes[attribute_name] = new_value
+        # may cause problems with changing all tiles of the same type at once, should probably copy the dict when doing that

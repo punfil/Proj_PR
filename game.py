@@ -8,7 +8,6 @@ import constants
 import json
 
 import random
-import time
 
 
 class Game:
@@ -24,7 +23,7 @@ class Game:
         self._tanks_sprites = None
         self._tanks_sprites_group = None
 
-        # Background - here are objects to be displayed. Only ints are allowed
+        # Background - here are objects to be displayed. Only int sizes are allowed
         self._background_board = None
         self._background_surface = None
         self._background_scale = None
@@ -41,21 +40,10 @@ class Game:
 
         self._background_board = BackgroundBoard(self._width, self._height, self._background_scale)
 
+        self.load_map("doesn't work yet, map path+filename will go here")
+
         pygame.init()
         pygame.display.set_caption("Project - Distracted Programming")
-
-        for x in range(int(self._width / self._background_scale)):
-            for y in range(int(self._height / self._background_scale)):
-                # loading from file should go somewhere around here
-                if random.random() > 0.2:
-                    filename = "./resources/grass.json"
-                else:
-                    filename = "./resources/house.json"
-                _ = self.load_tile(filename)
-                self._background_board.setUpTile(x, y, Tile(self._background_board.getXForDrawing(x),
-                                                            self._background_board.getYForDrawing(y),
-                                                            self._tiles[filename]["texture"]))
-                # todo Tile should(?) get the whole tile instead of just the texture
 
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
         self._background_surface = pygame.Surface((self._width, self._height))
@@ -74,6 +62,19 @@ class Game:
             self._tanks_sprites_group.add(tank)
             self._tanks_sprites[i] = tank
 
+    def load_map(self, filename):
+        """loads map from file --- !doesn't work yet!"""
+
+        # currently a very simple random board generator, actual loading will come later
+        for x in range(self._background_board.width):
+            for y in range(self._background_board.height):
+                if random.random() > 0.2:
+                    filename = "./resources/grass.json"
+                else:
+                    filename = "./resources/house.json"
+                tile_attributes = self.load_tile(filename)
+                self._background_board.set_tile(x, y, Tile(x, y, tile_attributes))
+
     def load_tile(self, filename):
         tile = self._tiles.get(filename)
         if tile:
@@ -85,20 +86,15 @@ class Game:
         self._tiles[filename] = tile
         return tile
 
-    def draw_background_surface(self):
-        for x in range(int(self._width / self._background_scale)):
-            for y in range(int(self._height / self._background_scale)):
-                self._background_surface.blit(self._background_board.getTile(x, y).texture,
-                                              (self._background_board.getXForDrawing(x),
-                                               self._background_board.getYForDrawing(y)))
-        self._screen.blit(self._background_surface, (0, 0))
-
     def play(self):
-        self.draw_background_surface()
+        self._background_board.draw(self._screen, draw_all=True)
 
         while True:
-            self._clock.tick()
+            self._clock.tick(120)
+
+            self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
+
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
                     pygame.quit()
@@ -112,7 +108,12 @@ class Game:
                 self._tanks[0].offsetY(-constants.default_movement_speed)
             if keys[pygame.K_DOWN]:
                 self._tanks[0].offsetY(constants.default_movement_speed)
-
+            if keys[pygame.K_SPACE]:
+                # updating tiles test
+                tile = random.choice([self.load_tile("resources/grass.json"), self.load_tile("resources/grass.json"), self.load_tile("resources/house.json")])
+                randx = random.randint(0, self._background_board.width-1)
+                randy = random.randint(0, self._background_board.height-1)
+                self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
 
             self._tanks_sprites_group.clear(self._screen, self._background_surface)
             self._tanks_sprites_group.draw(self._screen)
@@ -121,4 +122,3 @@ class Game:
             # test^
 
             pygame.display.flip()
-        sys.exit(0)

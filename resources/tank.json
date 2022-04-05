@@ -1,8 +1,10 @@
 {
 	"texture": "./Pictures/tank.jpg",
-	"move_speed": 100,
-	"visibility": 255,
-	"blocks_movement":  false,
-	"blocks_bullets": false,
-    "destructible": false
+	"hp": 10,
+	"max_speed": 100,
+	"acceleration": 400,
+	"deceleration": 400,
+	"drag": 200,
+	"turn_rate": 90,
+	"driftiness": 0.5
 }

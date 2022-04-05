@@ -1,7 +1,12 @@
-default_movement_speed = 1.0
+default_movement_speed = 2.0
 grass_movement_difficulty = 1.0
-bar_height = 50
+bar_height = 0  # If 0 then removed
 textures_count = 3
 grass_jpg = "grass.jpg"
 default_HP = 100
 default_tank_x = 50
+window_height = 600
+window_width = 800
+background_scale = 50
+object_collision_damage = 0.2
+bullet_collision_damage = 10

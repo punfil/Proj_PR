@@ -1,12 +1,11 @@
 import constants
 
-# Will this class be even required?
 
 class Tank:
     def __init__(self, player_no, x, y):
         self.__player_no = player_no
-        self._x = x  # Should be float
-        self._y = y  # Should be float
+        self._x = x
+        self._y = y
         self._speed = constants.default_movement_speed
         self._hp = constants.default_HP
 
@@ -19,7 +18,8 @@ class Tank:
         self._x = value
 
     def offsetX(self, value):
-        self._x += value
+        if self.check_x_move(value):
+            self._x += value
 
     @property
     def y(self):
@@ -30,7 +30,8 @@ class Tank:
         self._y = value
 
     def offsetY(self, value):
-        self._y += value
+        if self.check_y_move(value):
+            self._y += value
 
     @property
     def speed(self):
@@ -46,3 +47,16 @@ class Tank:
 
     def offsetHP(self, value):
         self._hp += value
+
+    def check_y_move(self, value):
+        if self._y + value < 0 or self._y + value + constants.background_scale > constants.window_height:
+            self.offsetHP(-constants.object_collision_damage)
+            return False
+        return True
+
+    def check_x_move(self, value):
+        if self._x + value < 0 or self._x + value + constants.background_scale > constants.window_width:
+            # Needs to know what are dimensions of tank, for now square, later circle
+            self.offsetHP(-constants.object_collision_damage)
+            return False
+        return True

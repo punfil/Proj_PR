@@ -18,6 +18,8 @@ class Game:
         self._player_count = None
 
         # Tank related variables
+        self._my_tank = None # For easier access
+        self._my_tank_sprite = None
         self._tanks = None
         self._tanks_sprites = None
         self._tanks_sprites_group = None
@@ -29,9 +31,9 @@ class Game:
         self._clock = None
 
     def setup(self):
-        self._width = 800  # Those values need to be downloaded from socket
-        self._height = 600
-        self._background_scale = 50
+        self._width = constants.window_width  # Those values need to be downloaded from socket
+        self._height = constants.window_height
+        self._background_scale = constants.background_scale
         self._player_count = 1
         tank_spawn_x = 500
         tank_spawn_y = 500  # Can be random received from server or constant spawn point
@@ -52,8 +54,12 @@ class Game:
         self._tanks = [None for _ in range(self._player_count)]
         self._tanks_sprites = [None for _ in range(self._player_count)]
         for i in range(self._player_count):
-            self._tanks[i] = Tank(i, tank_spawn_x, tank_spawn_y)
             tank = pygame.sprite.Sprite()
+            if not i:
+                self._my_tank = self._tanks[i] = Tank(i, tank_spawn_x, tank_spawn_y)
+                self._my_tank_sprite = tank
+            else:
+                self._tanks[i] = Tank(i, tank_spawn_x, tank_spawn_y)
             tank.image = self._tiles["./resources/tank.json"]["texture"]
             tank.rect = (self._tanks[i].x, self._tanks[i].y)
             self._tanks_sprites_group.add(tank)
@@ -83,6 +89,16 @@ class Game:
         self._tiles[filename] = tile
         return tile
 
+    def sprite_update_according_to_array(self):
+        for i in range(self._player_count):
+            self._tanks_sprites[i].rect = (self._tanks[i].x, self._tanks[i].y)
+
+    def draw_hp_bars(self):
+        for i in range(self._player_count):
+            pygame.draw.rect(self._background_board.background_surface, (255, 0, 0), (self._tanks[i].x, self._tanks[i].y - 20, 50, 10))  # NEW
+            #pygame.draw.rect(self._background_board.background_surface, (0, 128, 0),
+                        # (self._tanks[i].x, self._tanks[i].y - 20, 50 - (5 * (10 - self._tanks[i].hp)), 100))  # NEW
+
     def play(self):
         self._background_board.draw(self._screen, draw_all=True)
 
@@ -98,24 +114,26 @@ class Game:
                     sys.exit(0)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
-                self._tanks[0].offsetX(-constants.default_movement_speed)
+                self._my_tank.offsetX(-constants.default_movement_speed)
             if keys[pygame.K_RIGHT]:
-                self._tanks[0].offsetX(constants.default_movement_speed)
+                self._my_tank.offsetX(constants.default_movement_speed)
             if keys[pygame.K_UP]:
-                self._tanks[0].offsetY(-constants.default_movement_speed)
+                self._my_tank.offsetY(-constants.default_movement_speed)
             if keys[pygame.K_DOWN]:
-                self._tanks[0].offsetY(constants.default_movement_speed)
-            if keys[pygame.K_SPACE]:
+                self._my_tank.offsetY(constants.default_movement_speed)
+            # if keys[pygame.K_SPACE]:
+                # Shooting?
                 # updating tiles test
-                tile = random.choice([self.load_tile("resources/grass.json"), self.load_tile("resources/grass.json"), self.load_tile("resources/house.json")])
-                randx = random.randint(0, self._background_board.width-1)
-                randy = random.randint(0, self._background_board.height-1)
-                self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
+                # tile = random.choice([self.load_tile("resources/grass.json"), self.load_tile("resources/grass.json"),
+                #                       self.load_tile("resources/house.json")])
+                # randx = random.randint(0, self._background_board.width-1)
+                # randy = random.randint(0, self._background_board.height-1)
+                # self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._tanks_sprites_group.draw(self._screen)
             for i in range(self._player_count):
                 self._screen.blit(self._tanks_sprites[i].image, (self._tanks[i].x, self._tanks[i].y))
+            self.sprite_update_according_to_array()  # This update all sprites according to array
             # test^
-
             pygame.display.flip()

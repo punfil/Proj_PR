@@ -1,6 +1,5 @@
-from board import TankBoard
 from tile import Tile
-from background_board import BackgroundBoard
+from Boards.background_board import BackgroundBoard
 from tank import Tank
 import pygame
 import sys

@@ -11,3 +11,5 @@ server/*.user
 *.vcxproj
 .idea/workspace.xml
 server/.vs/Prserveroj_PR_serv/v17/.suo
+Boards/__pycache__/*
+

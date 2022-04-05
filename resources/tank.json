@@ -1,5 +1,5 @@
 {
-	"texture": "tank.jpg",
+	"texture": "./Pictures/tank.jpg",
 	"move_speed": 100,
 	"visibility": 255,
 	"blocks_movement":  false,

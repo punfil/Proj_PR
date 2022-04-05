@@ -1,4 +1,4 @@
-default_movement_speed = 0.25
+default_movement_speed = 1.0
 grass_movement_difficulty = 1.0
 bar_height = 50
 textures_count = 3

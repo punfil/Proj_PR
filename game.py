@@ -19,6 +19,8 @@ class Game:
         self._width = None
         self._height = None
         self._player_count = None
+        self._my_player_id = None
+
         # Connection related variables
         self._connection = None
 
@@ -39,7 +41,9 @@ class Game:
         self._connection = Connection()
         if not self._connection.establish_connection():
             return False
-        self._width, self._height, self._background_scale, self._player_count, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
+        self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
+        if self._width == 0:
+            return False
         # self._width = constants.window_width  # Those values need to be downloaded from socket
         # self._height = constants.window_height
         # self._background_scale = constants.background_scale
@@ -63,7 +67,7 @@ class Game:
             tank = Tank(i, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
             self._tanks.append(tank)
-            self._my_tank = tank # Warning!
+            self._my_tank = tank  # Warning!
         return True
 
     def load_map(self, filename):
@@ -86,15 +90,21 @@ class Game:
         with open(filename, 'r') as file:
             resource = json.load(file)
         resource["texture"] = pygame.image.load(resource["texture"])
-        resource["texture"] = pygame.transform.scale(resource["texture"], (self._background_scale, self._background_scale))
+        resource["texture"] = pygame.transform.scale(resource["texture"],
+                                                     (self._background_scale, self._background_scale))
         self._resources[filename] = resource
         return resource
 
     def draw_hp_bars(self):
         for i in range(self._player_count):
-            pygame.draw.rect(self._background_board.background_surface, (255, 0, 0), (self._tanks[i].x, self._tanks[i].y - 20, 50, 10))  # NEW
-            #pygame.draw.rect(self._background_board.background_surface, (0, 128, 0),
-                        # (self._tanks[i].x, self._tanks[i].y - 20, 50 - (5 * (10 - self._tanks[i].hp)), 100))  # NEW
+            pygame.draw.rect(self._background_board.background_surface, (255, 0, 0),
+                             (self._tanks[i].x, self._tanks[i].y - 20, 50, 10))  # NEW
+            # pygame.draw.rect(self._background_board.background_surface, (0, 128, 0),
+            # (self._tanks[i].x, self._tanks[i].y - 20, 50 - (5 * (10 - self._tanks[i].hp)), 100))  # NEW
+
+    def exit_game(self):
+        self._connection.close_connection()
+        sys.exit(0)
 
     def play(self):
         self._background_board.draw(self._screen, draw_all=True)
@@ -107,19 +117,23 @@ class Game:
 
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
-                    pygame.quit()
-                    sys.exit(0)
+                    self.exit_game()
 
             keys = pygame.key.get_pressed()
             self._my_tank.keyboard_input(keys)
+
             if keys[pygame.K_SPACE]:
                 # updating tiles test
-                tile = random.choice([self.load_resource("resources/grass.json"), self.load_resource("resources/grass.json"), self.load_resource("resources/house.json")])
-                randx = random.randint(0, self._background_board.width-1)
-                randy = random.randint(0, self._background_board.height-1)
+                tile = random.choice(
+                    [self.load_resource("resources/grass.json"), self.load_resource("resources/grass.json"),
+                     self.load_resource("resources/house.json")])
+                randx = random.randint(0, self._background_board.width - 1)
+                randy = random.randint(0, self._background_board.height - 1)
                 self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
 
             self._tanks_sprites_group.update(delta_time)
+            #Important - send the server the information that the position changed!
+
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._tanks_sprites_group.draw(self._screen)
 

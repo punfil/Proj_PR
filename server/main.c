@@ -36,6 +36,7 @@ typedef struct configuration_t{
 	uint32_t height;
 	uint32_t background_scale;
 	uint32_t player_count;
+	uint32_t player_id;
 	uint32_t tank_spawn_x;
 	uint32_t tank_spawn_y;
 }configuration_t;
@@ -78,12 +79,13 @@ void* serveTheClient(void* arg){
 	printf("Accepted connection from %s\n", inet_ntoa(my_data->client->sin_addr));  
 	printf("Sending configuration to client!\n");
     send_payload(my_data->csocket, my_data->configuration, sizeof(struct configuration_t));
-    printf("Closing connection to client\n");
+	printf("Closing connection to client\n");
     printf("----------------------------\n");
 	close_socket(my_data->csocket);
 	player_count--;
 }
 int main() {
+	printf("Hello server!\n");
 	player_count = 0;
 	tanks_in_game = (tank_t**)malloc(MAX_PLAYERS*(sizeof(tank_t*)));
 	if (tanks_in_game == NULL){
@@ -111,6 +113,7 @@ int main() {
 	temp->height = 600;
 	temp->background_scale = 50;
 	temp->player_count = 1;
+	temp->player_id = 1;
 	temp->tank_spawn_x = 100;
 	temp->tank_spawn_y = 500;
 	printf("Server started listening on port %d\n", PORT);
@@ -125,6 +128,7 @@ int main() {
 		for_threads[player_count].client = &clients[player_count];
 		for_threads[player_count].configuration = temp;
 		player_count++;
+		printf("Player count: %d\n", player_count);
 		int result = pthread_create(&cthreads[player_count-1], NULL, serveTheClient, &for_threads[player_count-1]);
 		if (result!=0){
 			printf("Failed to create thread");

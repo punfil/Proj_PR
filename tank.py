@@ -6,7 +6,7 @@ from math import sin, cos, pi
 class Tank(pygame.sprite.Sprite):
     def __init__(self, player_no, x, y, attributes):
         super().__init__()
-        self.__player_no = player_no
+        self._player_no = player_no
         self._x = x
         self._y = y
 

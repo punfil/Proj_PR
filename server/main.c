@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,6 +18,12 @@ typedef struct tank_t {
 	uint32_t x_location;
 	uint32_t y_location;
 }tank_t;
+
+typedef struct for_thread {
+	uint32_t player_id;
+	int csocket;
+	struct sockaddr_in client;
+}for_thread;
 
 enum true_or_false{
 	false,
@@ -50,7 +57,7 @@ int create_socket(int port){
     {
         exit(1);
     }
-    listen(sock , 32); //backlog value - how many incoming connections can queue up
+    listen(sock , MAX_PLAYERS); //backlog value - how many incoming connections can queue up
     return sock;
 }
 
@@ -65,7 +72,9 @@ enum true_or_false send_payload(int sock, void* msg, uint32_t msgsize){
 	return true;
 }
 
+void serveTheClient(){
 
+}
 int main() {
 	player_count = 0;
 	tanks_in_game = (tank_t**)malloc(MAX_PLAYERS*(sizeof(tank_t*)));
@@ -79,24 +88,16 @@ int main() {
 		}		
 	}
 	
-	int BUFFSIZE=512;
-	char buff[BUFFSIZE];
-	int ssock, csock;
-	int nread;
-	struct sockaddr_in client;
-	int customer = sizeof(client);
-	ssock = create_socket(PORT);
-	printf("Server started listening on port %d\n", PORT);
-	csock = accept(ssock, (struct sockaddr *)&client, &customer);
-	if (csock < 0)
-        {
-            printf("Error: accept() failed\n");
-			close_socket(ssock);
-			return 0;
-        }
+	int csockets[MAX_PLAYERS];
+	pthread_t cthreads[MAX_PLAYERS];
+	for_thread for_threads[MAX_PLAYERS];
+	struct sockaddr_in clients[MAX_PLAYERS];
 
-    printf("Accepted connection from %s\n", inet_ntoa(client.sin_addr));
-    bzero(buff, BUFFSIZE);
+	int customer_size = sizeof(struct sockaddr_in);
+	int main_socket = create_socket(PORT);
+	//Buffers for incoming data
+	//int BUFFSIZE=512;
+	//char buff[BUFFSIZE];
 	struct configuration_t* temp = (struct configuration_t*)malloc(sizeof(struct configuration_t));
 	temp->width = 800;
 	temp->height = 600;
@@ -104,11 +105,26 @@ int main() {
 	temp->player_count = 1;
 	temp->tank_spawn_x = 100;
 	temp->tank_spawn_y = 500;
-	printf("Sending configuration to client!\n");
-    send_payload(csock, temp, sizeof(struct configuration_t));
+	printf("Server started listening on port %d\n", PORT);
+	while (1){
+		csockets[player_count] = accept(main_socket, (struct sockaddr *)&clients[player_count], &customer_size);
+		player_count++;
+		if (csockets[player_count-1] < 0){
+            printf("Error: accept() failed\n");
+			player_count--;
+			continue;
+        }
+		printf("Accepted connection from %s\n", inet_ntoa(clients[player_count-1].sin_addr));  
+    	//bzero(buff, BUFFSIZE);
+			
+		printf("Sending configuration to client!\n");
+    	send_payload(csockets[player_count-1], temp, sizeof(struct configuration_t));
+    	printf("Closing connection to client\n");
+    	printf("----------------------------\n");
+		close_socket(csockets[player_count-1]);
+		player_count--;
+	}
 	free(temp);
-    printf("Closing connection to client\n");
-    printf("----------------------------\n");
-	close_socket(ssock);
+	close_socket(main_socket);
 	return 0;
 }

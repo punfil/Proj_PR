@@ -39,7 +39,6 @@ class Game:
         self._connection = Connection()
         if not self._connection.establish_connection():
             return False
-        self._connection.send_single_tank()
         self._width, self._height, self._background_scale, self._player_count, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
         # self._width = constants.window_width  # Those values need to be downloaded from socket
         # self._height = constants.window_height

@@ -54,11 +54,12 @@ class Game:
             tank = Tank(i, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
             self._tanks.append(tank)
+            self._my_tank = tank # Warning!
 
     def load_map(self, filename):
         """loads map from file --- !doesn't work yet!"""
 
-        # currently a very simple random board generator, actual loading will come later
+        # currently, a very simple random board generator, actual loading will come later
         for x in range(self._background_board.width):
             for y in range(self._background_board.height):
                 if random.random() > 0.2:
@@ -100,7 +101,7 @@ class Game:
                     sys.exit(0)
 
             keys = pygame.key.get_pressed()
-            self._tanks[0].keyboard_input(keys)
+            self._my_tank.keyboard_input(keys)
             if keys[pygame.K_SPACE]:
                 # updating tiles test
                 tile = random.choice([self.load_resource("resources/grass.json"), self.load_resource("resources/grass.json"), self.load_resource("resources/house.json")])

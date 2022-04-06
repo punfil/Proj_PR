@@ -1,5 +1,8 @@
+from time import sleep
+
 from tile import Tile
 from Boards.background_board import BackgroundBoard
+from Networking.connection import Connection
 from tank import Tank
 import pygame
 import sys
@@ -16,6 +19,8 @@ class Game:
         self._width = None
         self._height = None
         self._player_count = None
+        # Connection related variables
+        self._connection = None
 
         # Tank related variables
         self._my_tank = None  # For easier access
@@ -31,12 +36,17 @@ class Game:
         self._clock = None
 
     def setup(self):
-        self._width = constants.window_width  # Those values need to be downloaded from socket
-        self._height = constants.window_height
-        self._background_scale = constants.background_scale
-        self._player_count = 1
-        tank_spawn_x = 500
-        tank_spawn_y = 500  # Can be random received from server or constant spawn point
+        self._connection = Connection()
+        if not self._connection.establish_connection():
+            return False
+        self._connection.send_single_tank()
+        self._width, self._height, self._background_scale, self._player_count, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
+        # self._width = constants.window_width  # Those values need to be downloaded from socket
+        # self._height = constants.window_height
+        # self._background_scale = constants.background_scale
+        # self._player_count = 1
+        # tank_spawn_x = 500
+        # tank_spawn_y = 500  # Can be random received from server or constant spawn point
 
         self._background_board = BackgroundBoard(self._width, self._height, self._background_scale)
 
@@ -55,6 +65,7 @@ class Game:
             self._tanks_sprites_group.add(tank)
             self._tanks.append(tank)
             self._my_tank = tank # Warning!
+        return True
 
     def load_map(self, filename):
         """loads map from file --- !doesn't work yet!"""

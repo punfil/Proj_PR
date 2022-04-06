@@ -13,3 +13,5 @@ server/*.user
 server/.vs/Prserveroj_PR_serv/v17/.suo
 Boards/__pycache__/*
 
+server/a.out
+Networking/__pycache__/*

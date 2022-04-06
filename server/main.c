@@ -15,11 +15,12 @@ typedef struct payload_t {
 	uint32_t player_id;
 	uint32_t x_location;
 	uint32_t y_location;
-};
+}payload_t;
+
 enum true_or_false{
 	false,
 	true,
-}
+};
 
 //pragma pack()
 
@@ -42,11 +43,11 @@ int create_socket(int port){
 }
 
 void close_socket(int sock){
-	close(socket);
+	close(sock);
 }
 
-void send_payload(int sock, payload_t* msg){
-	if(write(sock, msg, sizeof(payload_t))<0){ //write returns number of bytes sent
+enum true_or_false send_payload(int sock, struct payload_t* msg){
+	if(write(sock, msg, sizeof(struct payload_t))<0){ //write returns number of bytes sent
 		return false;
 	}
 	return true;
@@ -54,6 +55,36 @@ void send_payload(int sock, payload_t* msg){
 
 
 int main() {
+	int BUFFSIZE=512;
+	char buff[BUFFSIZE];
+	int ssock, csock;
+	int nread;
+	struct sockaddr_in client;
+	int customer = sizeof(client);
+	ssock = create_socket(PORT);
+	printf("Server started listening on port %d\n", PORT);
+	csock = accept(ssock, (struct sockaddr *)&client, &customer);
+	if (csock < 0)
+        {
+            printf("Error: accept() failed\n");
+			close_socket(ssock);
+			return 0;
+        }
 
+    printf("Accepted connection from %s\n", inet_ntoa(client.sin_addr));
+    bzero(buff, BUFFSIZE);
+    while ((nread=read(csock, buff, BUFFSIZE)) > 0)
+    {
+        printf("\nReceived %d bytes\n", nread);
+        struct payload_t *p = (struct payload_t*) buff;
+        printf("Received contents: id=%d, counter=%d, temp=%d\n",
+        p->player_id, p->x_location, p->y_location);
+
+        printf("Sending it back.. ");
+        send_payload(csock, p);
+    }
+    printf("Closing connection to client\n");
+    printf("----------------------------\n");
+	close_socket(ssock);
 	return 0;
 }

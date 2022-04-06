@@ -1,7 +1,7 @@
 import socket
 import sys
 from ctypes import *
-from payload import Payload
+from Networking.payload import Payload
 
 
 class Connection:
@@ -12,7 +12,7 @@ class Connection:
     def establish_connection(self):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.connect(("127.0.0.1", self._port))
+            self._socket.connect(("192.168.0.21", self._port))
         except socket.error as err:
             return False
         except AttributeError as err:
@@ -27,3 +27,10 @@ class Connection:
         buff = self._socket.recv(sizeof(Payload))
         payload_in = Payload.from_buffer_copy(buff)
         return payload_in
+
+    def send_single_payload(self):
+        payload_out = Payload(1, 5, 3)
+        nsent = self._socket.send(payload_out)
+        if nsent:
+            return True
+        return False

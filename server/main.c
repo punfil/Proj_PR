@@ -22,7 +22,8 @@ typedef struct tank_t {
 typedef struct for_thread {
 	uint32_t player_id;
 	int csocket;
-	struct sockaddr_in client;
+	struct sockaddr_in* client;
+	struct configuration_t* configuration;
 }for_thread;
 
 enum true_or_false{
@@ -72,8 +73,15 @@ enum true_or_false send_payload(int sock, void* msg, uint32_t msgsize){
 	return true;
 }
 
-void serveTheClient(){
-
+void* serveTheClient(void* arg){
+	for_thread* my_data = (for_thread*)arg;
+	printf("Accepted connection from %s\n", inet_ntoa(my_data->client->sin_addr));  
+	printf("Sending configuration to client!\n");
+    send_payload(my_data->csocket, my_data->configuration, sizeof(struct configuration_t));
+    printf("Closing connection to client\n");
+    printf("----------------------------\n");
+	close_socket(my_data->csocket);
+	player_count--;
 }
 int main() {
 	player_count = 0;
@@ -108,21 +116,20 @@ int main() {
 	printf("Server started listening on port %d\n", PORT);
 	while (1){
 		csockets[player_count] = accept(main_socket, (struct sockaddr *)&clients[player_count], &customer_size);
-		player_count++;
 		if (csockets[player_count-1] < 0){
             printf("Error: accept() failed\n");
-			player_count--;
 			continue;
         }
-		printf("Accepted connection from %s\n", inet_ntoa(clients[player_count-1].sin_addr));  
+		for_threads[player_count].player_id = player_count;
+		for_threads[player_count].csocket = csockets[player_count];
+		for_threads[player_count].client = &clients[player_count];
+		for_threads[player_count].configuration = temp;
+		player_count++;
+		int result = pthread_create(&cthreads[player_count-1], NULL, serveTheClient, &for_threads[player_count-1]);
+		if (result!=0){
+			printf("Failed to create thread");
+		}
     	//bzero(buff, BUFFSIZE);
-			
-		printf("Sending configuration to client!\n");
-    	send_payload(csockets[player_count-1], temp, sizeof(struct configuration_t));
-    	printf("Closing connection to client\n");
-    	printf("----------------------------\n");
-		close_socket(csockets[player_count-1]);
-		player_count--;
 	}
 	free(temp);
 	close_socket(main_socket);

@@ -1,5 +1,6 @@
 {
 	"texture": "./Pictures/tank.jpg",
+	"turret": "./resources/turret.json",
 	"hp": 10,
 	"max_speed": 100,
 	"acceleration": 400,

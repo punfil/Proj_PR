@@ -1,0 +1,6 @@
+{
+	"texture": "./Pictures/projectile.png",
+	"speed": 500,
+	"damage": 5,
+	"lifetime": 2
+}

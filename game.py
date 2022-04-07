@@ -30,6 +30,8 @@ class Game:
         self._tanks = None
         self._tanks_sprites = None
         self._tanks_sprites_group = None
+        self._turrets_sprites_group = None
+        self._projectiles_sprites_group = None
 
         # Background - here are objects to be displayed. Only int sizes are allowed
         self._background_board = None
@@ -38,18 +40,21 @@ class Game:
         self._clock = None
 
     def setup(self):
-        self._connection = Connection()
-        if not self._connection.establish_connection():
-            return False
-        self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
-        if self._width == 0:
-            return False
-        # self._width = constants.window_width  # Those values need to be downloaded from socket
-        # self._height = constants.window_height
-        # self._background_scale = constants.background_scale
-        # self._player_count = 1
-        # tank_spawn_x = 500
-        # tank_spawn_y = 500  # Can be random received from server or constant spawn point
+        """initializes all variables, loads data from server"""
+
+        # self._connection = Connection()
+        # if not self._connection.establish_connection():
+        #     return False
+        # self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
+        # if self._width == 0:
+        #     return False
+
+        self._width = constants.window_width  # Those values need to be downloaded from socket
+        self._height = constants.window_height
+        self._background_scale = constants.background_scale
+        self._player_count = 1
+        tank_spawn_x = 500
+        tank_spawn_y = 500  # Can be random received from server or constant spawn point
 
         self._background_board = BackgroundBoard(self._width, self._height, self._background_scale)
 
@@ -62,10 +67,13 @@ class Game:
         self._clock = pygame.time.Clock()
 
         self._tanks_sprites_group = pygame.sprite.Group()
+        self._turrets_sprites_group = pygame.sprite.Group()
+        self._projectiles_sprites_group = pygame.sprite.Group()
         self._tanks = []
         for i in range(self._player_count):
-            tank = Tank(i, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
+            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
+            self._turrets_sprites_group.add(tank.turret)
             self._tanks.append(tank)
             self._my_tank = tank  # Warning!
         return True
@@ -84,6 +92,8 @@ class Game:
                 self._background_board.set_tile(x, y, Tile(x, y, tile_attributes))
 
     def load_resource(self, filename):
+        """loads a json resource file. Automatically converts textures to pygame images"""
+
         resource = self._resources.get(filename)
         if resource:
             return resource
@@ -103,10 +113,17 @@ class Game:
             # (self._tanks[i].x, self._tanks[i].y - 20, 50 - (5 * (10 - self._tanks[i].hp)), 100))  # NEW
 
     def exit_game(self):
+        """closes the connection with server and exits game"""
         self._connection.close_connection()
         sys.exit(0)
 
+    def add_projectile(self, projectile):
+        """adds a new projectile to the projectiles sprite group"""
+        self._projectiles_sprites_group.add(projectile)
+
     def play(self):
+        """runs the game"""
+
         self._background_board.draw(self._screen, draw_all=True)
 
         while True:
@@ -132,9 +149,16 @@ class Game:
                 self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
 
             self._tanks_sprites_group.update(delta_time)
-            #Important - send the server the information that the position changed!
+            self._turrets_sprites_group.update(delta_time)
+            self._projectiles_sprites_group.update(delta_time)
+            # Important - send the server the information that the position changed!
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
+            self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)
+            self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
+
             self._tanks_sprites_group.draw(self._screen)
+            self._turrets_sprites_group.draw(self._screen)
+            self._projectiles_sprites_group.draw(self._screen)
 
             pygame.display.flip()

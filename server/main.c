@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define PORT 2137
 #define MAX_PLAYERS 4
@@ -25,11 +26,6 @@ typedef struct for_thread {
 	struct sockaddr_in* client;
 	struct configuration_t* configuration;
 }for_thread;
-
-enum true_or_false{
-	false,
-	true,
-};
 
 typedef struct configuration_t{
 	uint32_t width;
@@ -67,7 +63,7 @@ void close_socket(int sock){
 	close(sock);
 }
 
-enum true_or_false send_payload(int sock, void* msg, uint32_t msgsize){
+bool send_payload(int sock, void* msg, uint32_t msgsize){
 	if(write(sock, msg, msgsize)<0){ //write returns number of bytes sent
 		return false;
 	}

@@ -1,5 +1,7 @@
 //RUN ON LINUX!
 
+//PROBLEMEM JEST COS, CO JEST TABLICA. CO - NIE WIEM
+
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -22,7 +24,7 @@ typedef struct tank_t {
 
 typedef struct for_thread {
 	uint32_t player_id;
-	int csocket;
+	int* csocket;
 	struct sockaddr_in* client;
 	struct configuration_t* configuration;
 }for_thread;
@@ -45,15 +47,17 @@ int create_socket(int port){
 	int sock, err;
 	struct sockaddr_in server;
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		printf("Socket open failed;\n");
 		exit(1); //Connection failed
 	}
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	bzero((char*) &server, sizeof(server));
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons(port);
-	if (bind(sock, (struct sockaddr *)&server , sizeof(server)) < 0)
-    {
-        exit(1);
+	if (bind(sock, (struct sockaddr *)&server , sizeof(server)) < 0){
+        printf("Socket binding failed");
+		exit(1);
     }
     listen(sock , MAX_PLAYERS); //backlog value - how many incoming connections can queue up
     return sock;
@@ -74,14 +78,14 @@ void* serveTheClient(void* arg){
 	for_thread* my_data = (for_thread*)arg;
 	printf("Accepted connection from %s\n", inet_ntoa(my_data->client->sin_addr));  
 	printf("Sending configuration to client!\n");
-    send_payload(my_data->csocket, my_data->configuration, sizeof(struct configuration_t));
+    send_payload(*my_data->csocket, my_data->configuration, sizeof(struct configuration_t));
+	close_socket(*my_data->csocket);
+	player_count--;
 	printf("Closing connection to client\n");
     printf("----------------------------\n");
-	close_socket(my_data->csocket);
-	player_count--;
 }
 int main() {
-	printf("Hello server!\n");
+	
 	player_count = 0;
 	tanks_in_game = (tank_t**)malloc(MAX_PLAYERS*(sizeof(tank_t*)));
 	if (tanks_in_game == NULL){
@@ -100,7 +104,12 @@ int main() {
 	struct sockaddr_in clients[MAX_PLAYERS];
 
 	int customer_size = sizeof(struct sockaddr_in);
+	printf("Hello server!\n");
 	int main_socket = create_socket(PORT);
+
+
+	printf("Here not hello\n");
+	
 	//Buffers for incoming data
 	//int BUFFSIZE=512;
 	//char buff[BUFFSIZE];
@@ -113,22 +122,27 @@ int main() {
 	temp->tank_spawn_x = 100;
 	temp->tank_spawn_y = 500;
 	printf("Server started listening on port %d\n", PORT);
+	int i=0;
+	//NOW WORKS - THE PROBLEM IS RACE CONDITION TO VARIABLE player_count - this has to be dealt with. Temporarly solved by adding sleep(3) in main (bad...)
 	while (1){
 		csockets[player_count] = accept(main_socket, (struct sockaddr *)&clients[player_count], &customer_size);
-		if (csockets[player_count-1] < 0){
+		if (csockets[i] < 0){
             printf("Error: accept() failed\n");
 			continue;
         }
 		for_threads[player_count].player_id = player_count;
-		for_threads[player_count].csocket = csockets[player_count];
+		for_threads[player_count].csocket = &csockets[player_count];
 		for_threads[player_count].client = &clients[player_count];
 		for_threads[player_count].configuration = temp;
 		player_count++;
-		printf("Player count: %d\n", player_count);
+		printf("Players count: %d\n", player_count);
 		int result = pthread_create(&cthreads[player_count-1], NULL, serveTheClient, &for_threads[player_count-1]);
+		pthread_detach(cthreads[player_count-1]);
 		if (result!=0){
 			printf("Failed to create thread");
 		}
+		i++;
+		sleep(3);
     	//bzero(buff, BUFFSIZE);
 	}
 	free(temp);

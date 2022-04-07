@@ -42,7 +42,6 @@ class Connection:
 
     def receive_single_configuration(self):
         for i in range(5):
-            print(i, "iteration")
             r, _, _ = select.select([self._socket], [], [], 0)
             if r:
                 buff = self._socket.recv(sizeof(PayloadConfiguration))  # Here is the problem, sometimes does not receive data and program hangs

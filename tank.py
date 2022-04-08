@@ -2,6 +2,7 @@ import constants
 import pygame
 from math import sin, cos, pi
 from turret import Turret
+from hp_bar import HPBar
 
 
 class Tank(pygame.sprite.Sprite):
@@ -13,6 +14,7 @@ class Tank(pygame.sprite.Sprite):
         self._y = y
 
         self._hp = attributes["hp"]
+        self._max_hp = self._hp
         self._max_speed = attributes["max_speed"]
         self._acceleration = attributes["acceleration"]
         self._deceleration = attributes["deceleration"]
@@ -22,6 +24,8 @@ class Tank(pygame.sprite.Sprite):
 
         turret_attributes = self._game.load_resource(attributes["turret"])
         self._turret = Turret(self, self._game, turret_attributes)
+
+        self._hp_bar = HPBar(self)
 
         self._speed = 0
         self._angle = 0       # direction the tank is *facing*
@@ -75,6 +79,7 @@ class Tank(pygame.sprite.Sprite):
         dx = -self._speed * sin(self._move_angle * (pi / 180)) * delta_time
         dy = -self._speed * cos(self._move_angle * (pi / 180)) * delta_time
 
+        # todo - maybe reduce speed when tank enters collision?
         if self.check_x_move(dx):
             self._x += dx
         if self.check_y_move(dy):
@@ -118,6 +123,10 @@ class Tank(pygame.sprite.Sprite):
         return self._turret
 
     @property
+    def hp_bar(self):
+        return self._hp_bar
+
+    @property
     def x(self):
         return self._x
 
@@ -149,8 +158,13 @@ class Tank(pygame.sprite.Sprite):
     def hp(self):
         return self._hp
 
+    @property
+    def max_hp(self):
+        return self._max_hp
+
     def offset_hp(self, value):
         self._hp += value
+        self._hp_bar.update_hp()
 
     def check_y_move(self, value):
         if self._y + value < 0 or self._y + value > constants.window_height:

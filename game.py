@@ -32,6 +32,7 @@ class Game:
         self._tanks_sprites_group = None
         self._turrets_sprites_group = None
         self._projectiles_sprites_group = None
+        self._hp_bars_sprites_group = None
 
         # Background - here are objects to be displayed. Only int sizes are allowed
         self._background_board = None
@@ -69,11 +70,13 @@ class Game:
         self._tanks_sprites_group = pygame.sprite.Group()
         self._turrets_sprites_group = pygame.sprite.Group()
         self._projectiles_sprites_group = pygame.sprite.Group()
+        self._hp_bars_sprites_group = pygame.sprite.Group()
         self._tanks = []
         for i in range(self._player_count):
             tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
             self._turrets_sprites_group.add(tank.turret)
+            self._hp_bars_sprites_group.add(tank.hp_bar)
             self._tanks.append(tank)
             self._my_tank = tank  # Warning!
         return True
@@ -127,7 +130,7 @@ class Game:
         self._background_board.draw(self._screen, draw_all=True)
 
         while True:
-            delta_time = self._clock.tick() / 1000  # number of seconds passed since the last frame
+            delta_time = self._clock.tick(30) / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
@@ -151,14 +154,17 @@ class Game:
             self._tanks_sprites_group.update(delta_time)
             self._turrets_sprites_group.update(delta_time)
             self._projectiles_sprites_group.update(delta_time)
+            self._hp_bars_sprites_group.update()
             # Important - send the server the information that the position changed!
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
+            self._hp_bars_sprites_group.clear(self._screen, self._background_board.background_surface)
 
             self._tanks_sprites_group.draw(self._screen)
             self._turrets_sprites_group.draw(self._screen)
             self._projectiles_sprites_group.draw(self._screen)
+            self._hp_bars_sprites_group.draw(self._screen)
 
             pygame.display.flip()

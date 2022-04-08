@@ -10,3 +10,6 @@ window_width = 800
 background_scale = 50
 object_collision_damage = 0.2
 bullet_collision_damage = 10
+hp_bar_width = 50
+hp_bar_height = 5
+hp_bar_y_offset = 25

@@ -3,6 +3,7 @@
 
 #define PORT 2137
 #define MAX_PLAYERS 4
+#define MAX_PROJECTILES 64
 
 #define UPDATE 'u'
 #define CREATE 'n'

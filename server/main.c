@@ -1,13 +1,17 @@
-#include <sys/socket.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+//Networking
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#include <pthread.h>
+#include <semaphore.h>
+
 
 #ifndef TANK_H
 #include "tank.h"
@@ -25,11 +29,53 @@
 #include "for_thread.h"
 #endif
 
-//Global variables for all threads
-int player_count; //Default 0
-tank_t ** tanks_in_game;
+#ifndef PROJECTILE_H
+#include "projectile.h"
+#endif
 
-//pragma pack()
+#ifndef CONTANTS_H
+#include "constants.h"
+#endif
+
+//Global variables for all threads !!!!!!!MEANT TO BE NOT GLOBAL IN THE FUTURE!!!!!!!!
+int player_count;
+struct tank** tanks_in_game;
+struct projectile** projectiles_in_game;
+
+int create_socket(int port);
+int close_socket(int sock);
+
+bool send_payload(int sock, void* msg, uint32_t msgsize);
+
+void* connection_handler(void* arg);
+
+void* sender(void* arg);
+void* receiver(void* arg);
+
+void setup_globals();
+
+int main() {
+	setup_globals();
+	pthread_t main_thread;
+	int result = pthread_create(&main_thread, NULL, connection_handler, NULL);
+	pthread_detach(main_thread);
+	if (result!=0){
+			printf("Failed to create thread");
+	}
+	while (1){
+		char x;
+		scanf("%c\n", &x)
+		if (x == 'q'){
+			break;
+		}
+	}
+	pthread_join(main_thread);
+	return 0;
+	
+	//Buffers for incoming data
+	//int BUFFSIZE=512;
+	//char buff[BUFFSIZE];
+}
 
 int create_socket(int port){
 	int sock, err;
@@ -62,78 +108,60 @@ bool send_payload(int sock, void* msg, uint32_t msgsize){
 	return true;
 }
 
-void* serveTheClient(void* arg){
-	for_thread* my_data = (for_thread*)arg;
-	printf("Accepted connection from %s\n", inet_ntoa(my_data->client->sin_addr));  
-	printf("Sending configuration to client!\n");
-    send_payload(*my_data->csocket, my_data->configuration, sizeof(struct configuration_t));
-	close_socket(*my_data->csocket);
-	player_count--;
-	printf("Closing connection to client\n");
-    printf("----------------------------\n");
-}
-int main() {
-	
-	player_count = 0;
-	tanks_in_game = (tank_t**)malloc(MAX_PLAYERS*(sizeof(tank_t*)));
-	if (tanks_in_game == NULL){
-		printf("Error allocating memory. Bye!\n");
-	}
-	for (int i=0;i<MAX_PLAYERS;i++){
-		tanks_in_game[i] = (tank_t*)malloc(MAX_PLAYERS*(sizeof(tank_t)));
-		if (tanks_in_game[i] == NULL){
-			printf("Error allocating memory. Bye!\n");
-		}		
-	}
-	
+void* connection_handler(void* arg){
+	//Variables for networking
 	int csockets[MAX_PLAYERS];
 	pthread_t cthreads[MAX_PLAYERS];
-	for_thread for_threads[MAX_PLAYERS];
+	struct for_thread for_threads[MAX_PLAYERS];
 	struct sockaddr_in clients[MAX_PLAYERS];
-
 	int customer_size = sizeof(struct sockaddr_in);
-	printf("Hello server!\n");
 	int main_socket = create_socket(PORT);
-
-
-	printf("Here not hello\n");
-	
-	//Buffers for incoming data
-	//int BUFFSIZE=512;
-	//char buff[BUFFSIZE];
-	struct configuration_t* temp = (struct configuration_t*)malloc(sizeof(struct configuration_t));
-	temp->width = 800;
-	temp->height = 600;
-	temp->background_scale = 50;
-	temp->player_count = 1;
-	temp->player_id = 1;
-	temp->tank_spawn_x = 100;
-	temp->tank_spawn_y = 500;
 	printf("Server started listening on port %d\n", PORT);
-	int i=0;
-	//NOW WORKS - THE PROBLEM IS RACE CONDITION TO VARIABLE player_count - this has to be dealt with. Temporarly solved by adding sleep(3) in main (bad...)
+
+	struct configuration* configuration_to_send = configuration_alloc();
+	configuration_set_values(configuration_to_send, 800, 600, 50, 1, 0, 100, 500);
+	
+	//Configure sender process
+	pthread_t sender_thread;
+	int result = pthread_create(&sender_thread, NULL, sender, NULL); //Change arguments!!!!
+	pthread_detach(sender_thread);
+	if (result!=0){
+			printf("Failed to create sender thread!");
+	}
+	//Configure receiver process
+	pthread_t receiver_thread;
+	int result = pthread_create(&receiver_thread, NULL, receiver, NULL); //Change arguments!!!!
+	pthread_detach(receiver_thread);
+	if (result!=0){
+			printf("Failed to create receiver thread!");
+	}
+
 	while (1){
 		csockets[player_count] = accept(main_socket, (struct sockaddr *)&clients[player_count], &customer_size);
-		if (csockets[i] < 0){
+		if (csockets[player_count] < 0){
             printf("Error: accept() failed\n");
 			continue;
         }
-		for_threads[player_count].player_id = player_count;
-		for_threads[player_count].csocket = &csockets[player_count];
-		for_threads[player_count].client = &clients[player_count];
-		for_threads[player_count].configuration = temp;
-		player_count++;
-		printf("Players count: %d\n", player_count);
-		int result = pthread_create(&cthreads[player_count-1], NULL, serveTheClient, &for_threads[player_count-1]);
-		pthread_detach(cthreads[player_count-1]);
-		if (result!=0){
-			printf("Failed to create thread");
-		}
-		i++;
-		sleep(3);
+		send_payload(csockets[player_count], configuration_to_send, sizeof())
     	//bzero(buff, BUFFSIZE);
 	}
 	free(temp);
 	close_socket(main_socket);
 	return 0;
+
+
+
+
+	configuration_free(configuration_to_send);
+}
+
+void setup_globals(){
+	//Config tank lists
+	player_count = 0;
+	tanks_in_game = (struct tank_t**)malloc(MAX_PLAYERS*(sizeof(struct tank*)));
+	if (tanks_in_game == NULL){
+		printf("Error allocating memory. Bye!\n");
+	}
+	projectiles_in_game = (struct projectile**)malloc(MAX_PROJECTILES*(sizeof(struct projectile*)));
+	
 }

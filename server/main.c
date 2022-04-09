@@ -1,7 +1,3 @@
-//RUN ON LINUX!
-
-//PROBLEMEM JEST COS, CO JEST TABLICA. CO - NIE WIEM
-
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -11,36 +7,28 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#define PORT 2137
-#define MAX_PLAYERS 4
+#ifndef TANK_H
+#include "tank.h"
+#endif
 
-//#pragma pack(1)
-typedef struct tank_t {
-	uint32_t player_id;
-	uint32_t x_location;
-	uint32_t y_location;
-}tank_t;
+#ifndef INFORMATION_H
+#include "information.h"
+#endif
 
-typedef struct for_thread {
-	uint32_t player_id;
-	int* csocket;
-	struct sockaddr_in* client;
-	struct configuration_t* configuration;
-}for_thread;
+#ifndef CONFIGURATION_H
+#include "configuration.h"
+#endif
 
-typedef struct configuration_t{
-	uint32_t width;
-	uint32_t height;
-	uint32_t background_scale;
-	uint32_t player_count;
-	uint32_t player_id;
-	uint32_t tank_spawn_x;
-	uint32_t tank_spawn_y;
-}configuration_t;
+#ifndef FOR_THREAD_H
+#include "for_thread.h"
+#endif
 
+//Global variables for all threads
 int player_count; //Default 0
 tank_t ** tanks_in_game;
+
 //pragma pack()
 
 int create_socket(int port){

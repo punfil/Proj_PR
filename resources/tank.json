@@ -1,5 +1,5 @@
 {
-	"texture": "./Pictures/tank.jpg",
+	"texture": "./Pictures/tank.png",
 	"turret": "./resources/turret.json",
 	"hp": 10,
 	"max_speed": 100,

@@ -103,8 +103,6 @@ class Game:
         with open(filename, 'r') as file:
             resource = json.load(file)
         resource["texture"] = pygame.image.load(resource["texture"])
-        resource["texture"] = pygame.transform.scale(resource["texture"],
-                                                     (self._background_scale, self._background_scale))
         self._resources[filename] = resource
         return resource
 
@@ -130,7 +128,7 @@ class Game:
         self._background_board.draw(self._screen, draw_all=True)
 
         while True:
-            delta_time = self._clock.tick(30) / 1000  # number of seconds passed since the last frame
+            delta_time = self._clock.tick() / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")

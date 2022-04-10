@@ -1,0 +1,37 @@
+#include <stdio.h>
+
+#include "constants.h"
+#include "other_methods.h"
+
+int* generate_id_list(int count){
+    int* array = (int*)malloc(count*sizeof(int));
+    if (array == NULL){
+        return NULL;
+    }
+    for (int i=0;i<count;i++){
+        array[i] = i;
+    }
+    return array;
+}
+
+int return_free_id(int* all_ids){
+    for (int i=0;i<MAX_PLAYERS;i++){
+        if (all_ids[i] != USED_ID){
+            all_ids[i] = USED_ID;
+            return i;
+        }
+    }
+}
+
+void set_id_available(int* all_ids, int which){
+    all_ids[which] = which;
+}
+
+void increment_players_count(int* players_count){
+    //Semaphore to be implemented
+    *players_count++;
+}
+void decrement_players_count(int* players_count){
+    //Semaphore to be implemented
+    *players_count--;
+}

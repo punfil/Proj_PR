@@ -236,6 +236,7 @@ void* sender(void* arg){
 	}
 	return 0;
 }
+
 void* receiver(void* arg){
 	struct for_thread* my_configuration = (struct for_thread*) arg;
 	while (1){

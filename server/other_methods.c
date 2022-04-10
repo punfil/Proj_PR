@@ -21,6 +21,7 @@ int return_free_id(int* all_ids){
             return i;
         }
     }
+    return USED_ID;
 }
 
 void set_id_available(int* all_ids, int which){

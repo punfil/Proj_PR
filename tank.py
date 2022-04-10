@@ -96,6 +96,9 @@ class Tank(pygame.sprite.Sprite):
 
     def drag(self, drag):
         """slows down the tank (called only when no acceleration input was given)"""
+        if self._speed == 0:
+            return
+
         start_speed = self._speed
         if self._speed > 0:
             self._speed -= drag

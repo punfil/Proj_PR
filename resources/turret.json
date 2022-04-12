@@ -5,6 +5,7 @@
 	"full_rotation": false,
 	"max_left_angle": 150,
 	"max_right_angle": 150,
+	"inaccuracy": 5,
 	"cooldown": 0.5,
 	"projectile_offset": [0, 40]
 }

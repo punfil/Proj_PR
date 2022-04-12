@@ -1,6 +1,7 @@
 import pygame
 from projectile import Projectile
 from math import sin, cos, pi
+import random
 
 
 class Turret(pygame.sprite.Sprite):
@@ -18,6 +19,7 @@ class Turret(pygame.sprite.Sprite):
         self._max_right_angle = attributes["max_right_angle"]
         self._cooldown = attributes["cooldown"]
         self._projectile_offset = attributes["projectile_offset"]
+        self._inaccuracy = attributes["inaccuracy"]
 
         self._ammo = self._game.load_resource(attributes["ammo"])
 
@@ -71,5 +73,7 @@ class Turret(pygame.sprite.Sprite):
             projectile_x += self._tank.x
             projectile_y += self._tank.y
 
-            projectile = Projectile(self._tank, projectile_x, projectile_y, self._absolute_angle, self._ammo)
+            projectile_angle = self._absolute_angle + (random.random()-0.5) * self._inaccuracy*2
+
+            projectile = Projectile(self._tank, projectile_x, projectile_y, projectile_angle, self._ammo)
             self._game.add_projectile(projectile)

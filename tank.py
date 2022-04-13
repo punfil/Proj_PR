@@ -137,7 +137,6 @@ class Tank(pygame.sprite.Sprite):
 
     def offset_hp(self, value):
         """changes the tank's hp by a given value"""
-        print("off")
         self._hp += value
         self._hp_bar.update_hp()
 

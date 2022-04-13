@@ -11,17 +11,18 @@ class BackgroundBoard:
         self._updated_tiles = []
 
     def set_tile(self, x, y, tile):
-        """sets tile at position (x,y). Also updates the background surface"""
+        """sets tile at grid position (x,y). Also updates the background surface"""
         self._background_board[x][y] = tile
         self._background_surface.blit(tile.get_attribute("texture"), self.get_screen_position(x, y))
         self._updated_tiles.append(tile)
 
     def get_tile(self, x, y):
-        """returns tile at position (x,y)"""
+        """returns tile at grid position (x,y)"""
         return self._background_board[x][y]
 
     def get_screen_position(self, x, y):
-        """returns the screen position (in pixels) corresponding to the tile position in the grid (x,y)"""
+        """returns the screen position (in pixels) corresponding to the tile grid position (x,y)"""
+        # todo, I'm not sure if this method should be here - the background board logic doesn't have much to do with screen and pixels
         pos = (x*self._scale, y*self._scale)
         return pos
 

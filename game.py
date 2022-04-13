@@ -57,7 +57,7 @@ class Game:
         tank_spawn_x = 500
         tank_spawn_y = 500  # Can be random received from server or constant spawn point
 
-        self._background_board = BackgroundBoard(self._width, self._height, self._background_scale)
+        self._background_board = BackgroundBoard(self._width, self._height+constants.bar_height, self._background_scale)
 
         self.load_map("doesn't work yet, map path+filename will go here")
 
@@ -88,7 +88,10 @@ class Game:
         for x in range(self._background_board.width):
             for y in range(self._background_board.height):
                 if random.random() > 0.2:
-                    filename = "./resources/grass.json"
+                    if random.random() > 0.5:
+                        filename = "./resources/grass.json"
+                    else:
+                        filename = "./resources/asphalt.json"
                 else:
                     filename = "./resources/house.json"
                 tile_attributes = self.load_resource(filename)
@@ -106,12 +109,9 @@ class Game:
         self._resources[filename] = resource
         return resource
 
-    def draw_hp_bars(self):
-        for i in range(self._player_count):
-            pygame.draw.rect(self._background_board.background_surface, (255, 0, 0),
-                             (self._tanks[i].x, self._tanks[i].y - 20, 50, 10))  # NEW
-            # pygame.draw.rect(self._background_board.background_surface, (0, 128, 0),
-            # (self._tanks[i].x, self._tanks[i].y - 20, 50 - (5 * (10 - self._tanks[i].hp)), 100))  # NEW
+    def get_tile_at_screen_position(self, x, y):
+        """returns tile from background board corresponding to the given (x,y) screen position"""
+        return self._background_board.get_tile(int(x/self._background_scale), int(y/self._background_scale))
 
     def exit_game(self):
         """closes the connection with server and exits game"""

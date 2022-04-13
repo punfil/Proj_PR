@@ -27,6 +27,9 @@ class Tank(pygame.sprite.Sprite):
 
         self._hp_bar = HPBar(self)
 
+        self._in_collision = False
+        self._collision_cooldown = 0
+
         self._speed = 0
         self._angle = 0       # direction the tank is *facing*
         self._move_angle = 0  # direction the tank is *moving*
@@ -72,18 +75,29 @@ class Tank(pygame.sprite.Sprite):
             self._turret.shoot()
 
     def update(self, delta_time):
+        self._collision_cooldown -= delta_time
+
         self.handle_keyboard(delta_time)
 
         self._move_angle = self._angle  # drifting doesn't work yet :<
 
-        dx = -self._speed * sin(self._move_angle * (pi / 180)) * delta_time
-        dy = -self._speed * cos(self._move_angle * (pi / 180)) * delta_time
+        tile_speed = self._game.get_tile_at_screen_position(self._x, self._y).get_attribute("move_speed")
+        dx = -self._speed * sin(self._move_angle * (pi / 180)) * delta_time * tile_speed
+        dy = -self._speed * cos(self._move_angle * (pi / 180)) * delta_time * tile_speed
 
-        # todo - maybe reduce speed when tank enters collision?
+        self._in_collision = False
         if self.check_x_move(dx):
             self._x += dx
+        else:
+            self._in_collision = True
         if self.check_y_move(dy):
             self._y += dy
+        else:
+            self._in_collision = True
+
+        if self._in_collision and self._collision_cooldown <= 0:
+            self._collision_cooldown = constants.object_collision_cooldown
+            self.offset_hp(-constants.object_collision_damage)
 
         self.rect.center = (self._x, self._y)
 
@@ -120,6 +134,28 @@ class Tank(pygame.sprite.Sprite):
     def rotate_turret(self, angle):
         """rotates the tank turret by a given angle"""
         self._turret.rotate(angle)
+
+    def offset_hp(self, value):
+        """changes the tank's hp by a given value"""
+        print("off")
+        self._hp += value
+        self._hp_bar.update_hp()
+
+    def check_y_move(self, value):
+        """checks if the tank can move to position (x, y+value)"""
+        if self._y + value < 0 or self._y + value > constants.window_height:
+            return False
+        if self._game.get_tile_at_screen_position(self._x, self._y+value).get_attribute("blocks_movement"):
+            return False
+        return True
+
+    def check_x_move(self, value):
+        """checks if the tank can move to position (x+value, y)"""
+        if self._x + value < 0 or self._x + value > constants.window_width:
+            return False
+        if self._game.get_tile_at_screen_position(self._x+value, self._y).get_attribute("blocks_movement"):
+            return False
+        return True
 
     @property
     def turret(self):
@@ -164,20 +200,3 @@ class Tank(pygame.sprite.Sprite):
     @property
     def max_hp(self):
         return self._max_hp
-
-    def offset_hp(self, value):
-        self._hp += value
-        self._hp_bar.update_hp()
-
-    def check_y_move(self, value):
-        if self._y + value < 0 or self._y + value > constants.window_height:
-            self.offset_hp(-constants.object_collision_damage)
-            return False
-        return True
-
-    def check_x_move(self, value):
-        if self._x + value < 0 or self._x + value > constants.window_width:
-            # Needs to know what are dimensions of tank, for now square, later circle
-            self.offset_hp(-constants.object_collision_damage)
-            return False
-        return True

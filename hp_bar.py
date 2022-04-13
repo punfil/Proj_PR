@@ -19,7 +19,7 @@ class HPBar(pygame.sprite.Sprite):
         self.rect.center = (self._tank.x, self._tank.y)
 
     def update(self):
-        self.rect.center = (self._tank.x, self._tank.y + self._y_offset)
+        self.rect.center = (self._tank.x, self._tank.y - self._y_offset)
 
     def update_hp(self):
         hp_fraction = self._tank.hp / self._tank.max_hp

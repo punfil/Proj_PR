@@ -1,3 +1,4 @@
+import json
 import pygame
 
 
@@ -34,11 +35,46 @@ class BackgroundBoard:
             screen.blit(self._background_surface, (0, 0))
         else:
             for tile in self._updated_tiles:
-                # we could do something fancy here, eg. not blitting individual textures,
+                # we could do something fancy here, e.g. not blitting individual textures,
                 # but instead blitting parts of self._background_surface, but I don't think it's necessary
                 screen.blit(tile.get_attribute("texture"), self.get_screen_position(tile.x, tile.y))
 
         self._updated_tiles = []
+
+    def save(self, filename):
+        """saves the board to the specified file"""
+
+        save_data = {
+            "width": self._width,
+            "height": self._height,
+        }
+        tiles_to_chars = {}
+        # dict containing {"tile_filename" : "C", ...} (C is a char representing the tile in tiles_string)
+
+        tiles_string = ""  # string representing all the tiles on the board
+
+        tile_char = 32  # decimal value of tile char
+
+        for y in range(self._height):
+            for x in range(self._width):
+                tile_type = self._background_board[x][y].get_attribute("resource_name")
+                char = tiles_to_chars.get(tile_type)
+                if char is None:
+                    if tile_char == 127:
+                        raise OverflowError("Too many different tiles")
+                    char = chr(tile_char)
+                    tiles_to_chars[tile_type] = char
+                    tile_char += 1
+                tiles_string += char
+
+        chars_to_tiles = {value: key for key, value in tiles_to_chars.items()}  # inverting the dict
+
+        save_data["tiles"] = chars_to_tiles
+        save_data["tiles_string"] = tiles_string
+
+        with open(filename, 'w') as file:
+            json.dump(save_data, file)
+        print("saved!")
 
     @property
     def width(self):

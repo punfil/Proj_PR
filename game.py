@@ -1,5 +1,3 @@
-from time import sleep
-
 from tile import Tile
 from Boards.background_board import BackgroundBoard
 from Networking.connection import Connection
@@ -8,8 +6,6 @@ import pygame
 import sys
 import constants
 import json
-
-import random
 
 
 class Game:
@@ -59,7 +55,7 @@ class Game:
 
         self._background_board = BackgroundBoard(self._width, self._height+constants.bar_height, self._background_scale)
 
-        self.load_map("doesn't work yet, map path+filename will go here")
+        self.load_map("save.json")
 
         pygame.init()
         pygame.display.set_caption("Project - Distracted Programming")
@@ -82,20 +78,24 @@ class Game:
         return True
 
     def load_map(self, filename):
-        """loads map from file --- !doesn't work yet!"""
+        """loads map from file"""
 
-        # currently, a very simple random board generator, actual loading will come later
-        for x in range(self._background_board.width):
-            for y in range(self._background_board.height):
-                if random.random() > 0.2:
-                    if random.random() > 0.5:
-                        filename = "./resources/grass.json"
-                    else:
-                        filename = "./resources/asphalt.json"
-                else:
-                    filename = "./resources/house.json"
-                tile_attributes = self.load_resource(filename)
-                self._background_board.set_tile(x, y, Tile(x, y, tile_attributes))
+        with open(filename, 'r') as file:
+            save_data = json.load(file)
+
+        width = save_data["width"]
+        height = save_data["height"]
+
+        self._background_board.width = width
+        self._background_board.height = height
+
+        for x in range(width):
+            for y in range(height):
+                char = save_data["tiles_string"][x + y*width]
+                tile_file = save_data["tiles"][char]
+                tile_attributes = self.load_resource(tile_file)
+                tile = Tile(x, y, tile_attributes)
+                self._background_board.set_tile(x, y, tile)
 
     def load_resource(self, filename):
         """loads a json resource file. Automatically converts textures to pygame images"""
@@ -106,12 +106,17 @@ class Game:
         with open(filename, 'r') as file:
             resource = json.load(file)
         resource["texture"] = pygame.image.load(resource["texture"])
+        resource["resource_name"] = filename
         self._resources[filename] = resource
         return resource
 
     def get_tile_at_screen_position(self, x, y):
         """returns tile from background board corresponding to the given (x,y) screen position"""
         return self._background_board.get_tile(int(x/self._background_scale), int(y/self._background_scale))
+
+    def screen_position_to_grid_position(self, x, y):
+        """converts screen position (in pixels) to grid position (in tiles)"""
+        return int(x/self._background_scale), int(y/self._background_scale)
 
     def exit_game(self):
         """closes the connection with server and exits game"""
@@ -139,15 +144,6 @@ class Game:
 
             keys = pygame.key.get_pressed()
             self._my_tank.keyboard_input(keys)
-
-            if keys[pygame.K_SPACE]:
-                # updating tiles test
-                tile = random.choice(
-                    [self.load_resource("resources/grass.json"), self.load_resource("resources/grass.json"),
-                     self.load_resource("resources/house.json")])
-                randx = random.randint(0, self._background_board.width - 1)
-                randy = random.randint(0, self._background_board.height - 1)
-                self._background_board.set_tile(randx, randy, Tile(randx, randy, tile))
 
             self._tanks_sprites_group.update(delta_time)
             self._turrets_sprites_group.update(delta_time)

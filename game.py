@@ -42,7 +42,7 @@ class Game:
         # self._connection = Connection()
         # if not self._connection.establish_connection():
         #     return False
-        # self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y = self._connection.receive_single_configuration()
+        # self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_single_configuration()
         # if self._width == 0:
         #     return False
 
@@ -50,6 +50,7 @@ class Game:
         self._height = constants.window_height
         self._background_scale = constants.background_scale
         self._player_count = 1
+        self._my_player_id = 0
         tank_spawn_x = 500
         tank_spawn_y = 500  # Can be random received from server or constant spawn point
 
@@ -74,7 +75,8 @@ class Game:
             self._turrets_sprites_group.add(tank.turret)
             self._hp_bars_sprites_group.add(tank.hp_bar)
             self._tanks.append(tank)
-            self._my_tank = tank  # Warning!
+            if i == self._my_player_id:
+                self._my_tank = tank
         return True
 
     def load_map(self, filename):
@@ -120,7 +122,7 @@ class Game:
 
     def exit_game(self):
         """closes the connection with server and exits game"""
-        self._connection.close_connection()
+        self._connection.close_connection(self._my_player_id)
         sys.exit(0)
 
     def add_projectile(self, projectile):

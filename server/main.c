@@ -54,10 +54,11 @@ void* receiver(void* arg);
 
 int main() {
 	pthread_t main_thread;
-	int result = pthread_create(&main_thread, NULL, connection_handler, NULL);
-	//pthread_detach(main_thread);
+	bool main_thread_running = true;
+	int result = pthread_create(&main_thread, NULL, connection_handler, (void*) &main_thread_running);
+	pthread_detach(main_thread); //This shouldn't be here, it doesn't free resources.
 	if (result!=0){
-			printf("Failed to create thread");
+			printf("Failed to create thread\n");
 	}
 	while (1){
 		char x;
@@ -66,6 +67,7 @@ int main() {
 			break;
 		}
 	}
+	main_thread_running = false;
 	pthread_join(main_thread, NULL);
 	return 0;
 	
@@ -107,8 +109,9 @@ bool send_payload(int sock, void* msg, uint32_t msgsize){
 }
 
 void* connection_handler(void* arg){
+	bool* running = (bool*) arg;
 	//Variables for connecting and player recognition
-	int players_count = 0;
+	int players_count = 2;
 
 	int* player_ids = generate_id_list(MAX_PLAYERS);
 	if (player_ids == NULL){
@@ -134,53 +137,55 @@ void* connection_handler(void* arg){
 		return NULL;
 	}
 
-	struct for_thread* for_threads = (struct for_thread*)malloc(sizeof(struct for_thread));
-	if (for_threads == NULL){
-		printf("Error allocating memory. Bye!\n");
-		return NULL;
-	}
-
 	struct sockaddr_in** clients = (struct sockaddr_in**)malloc(MAX_PLAYERS*sizeof(struct sockaddr_in*));
 	if (clients == NULL){
 		printf("Error allocating memory. Bye!\n");
 		return NULL;
 	}
 
+	struct for_thread* for_threads = for_thread_alloc();
+	if (for_threads == NULL){
+		printf("Error allocating memory. Bye!\n");
+		return NULL;
+	}
+	for_thread_set_values(for_threads, player_ids, tanks_in_game, projectiles_in_game, csockets, clients);
+
 	int customer_size = sizeof(struct sockaddr_in);
 	int main_socket = create_socket(PORT);
 
-	printf("Server started listening on port %d\n", PORT);
-
 	struct configuration* configuration_to_send = configuration_alloc();
-	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 0, 0, 0);
+	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 500, 500, 0);
 
 	//Configure sender process
 	pthread_t sender_thread;
-	int result = pthread_create(&sender_thread, NULL, sender, &for_threads); //Change arguments!!!!
-	pthread_detach(sender_thread);
+	int result = pthread_create(&sender_thread, NULL, sender, for_threads); //Change arguments!!!!
 	if (result!=0){
 			printf("Failed to create sender thread!");
 	}
+	pthread_detach(sender_thread);
+
 	//Configure receiver process
 	pthread_t receiver_thread;
-	result = pthread_create(&receiver_thread, NULL, receiver, &for_threads); //Change arguments!!!!
-	pthread_detach(receiver_thread);
+	result = pthread_create(&receiver_thread, NULL, receiver, for_threads); //Change arguments!!!!
 	if (result!=0){
 			printf("Failed to create receiver thread!");
 	}
-	return NULL;
+	pthread_detach(receiver_thread);
 
 	int temp_socket;
 	int current_player_id;
 	struct sockaddr_in temp_information;
-	while (1){
+	printf("Server started listening on port %d\n", PORT);
+	while (*running){
 		temp_socket = accept(main_socket, (struct sockaddr*) &temp_information, &customer_size);
-		
+
 		//Check if connection succeeded
 		if (temp_socket < 0){
             printf("Error: accept() failed\n");
 			continue;
         }
+
+		printf("New client connected from %s\n", inet_ntoa(temp_information.sin_addr));
 
 		//Prepare ID for the connection. If no is available then disconnect (!!!IN THE FUTURE: SEND SERVER IS FULL!!!)
 		current_player_id = return_free_id(player_ids);
@@ -191,7 +196,7 @@ void* connection_handler(void* arg){
 		}
 
 		//MAIN SEMAPHORE WAIT
-		increment_players_count(&players_count);
+		//increment_players_count(&players_count);
 		configuration_update_values(configuration_to_send, current_player_id, players_count);
 
 		//Send configuration to the new client
@@ -208,6 +213,9 @@ void* connection_handler(void* arg){
 		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
 		//MAIN SEMAPHORE POST
 	}
+	//Disconnect all clients here!!! Remember to comment detach in main
+	pthread_join(receiver_thread, NULL);
+	pthread_join(sender_thread, NULL);
 
 	free(player_ids);
 	free(tanks_in_game);
@@ -218,41 +226,41 @@ void* connection_handler(void* arg){
 	free(configuration_to_send);
 
 	close_socket(main_socket);
-	pthread_join(receiver_thread, NULL);
-	pthread_join(sender_thread, NULL);
+	
 	return NULL;	
 }
 
 void* sender(void* arg){
-	//struct for_thread* my_configuration = (struct for_thread*) arg;
-	// while (1){
-	// 	for (int i=0;i<MAX_PLAYERS;i++){
-	// 		if (my_configuration->player_ids[i] == USED_ID){
-	// 			printf("Hello sender!");
-	// 			///Do something
-	// 		}
-	// 	}
-	// }
+	struct for_thread* my_configuration = (struct for_thread*) arg;
+	while (my_configuration->running){
+		for (int i=0;i<MAX_PLAYERS;i++){
+			if (my_configuration->player_ids[i] == USED_ID){
+				//printf("Hello sender!");
+				///Do something
+			}
+		}
+	}
+	printf("Exiting sender\n");
 	return NULL;
 }
 
 void* receiver(void* arg){
-	// struct for_thread* my_configuration = (struct for_thread*) arg;
-	// while (1){
-	// 	for (int i=0;i<MAX_PLAYERS;i++){
-	// 		if (my_configuration->player_ids[i] == USED_ID){
-	// 			printf("Hello receiver!");
-	// 			///Do something
-	// 		}
-	// 	}
-	// }
-	// return 0;
+	struct for_thread* my_configuration = (struct for_thread*) arg;
+	while (my_configuration->running){
+		for (int i=0;i<MAX_PLAYERS;i++){
+			if (my_configuration->player_ids[i] == USED_ID){
+				//printf("Hello receiver!");
+				///Do something
+			}
+		}
+	}
+	printf("Exiting receiver\n");
+	return NULL;
 }
 
 /*
 TO DO's:
 a) notify server that the client disconnected,
-b) debug and test the code - it has been written but not tested,
 c) implement sender and receiver,
 d) implement semaphores for critical sections,
 */

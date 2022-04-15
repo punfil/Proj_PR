@@ -11,4 +11,6 @@ hp_bar_width = 50
 hp_bar_height = 5
 hp_bar_y_offset = -25
 
+tank_disconnect_value = -1
+
 default_map_editor_tile = "./resources/grass.json"

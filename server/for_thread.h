@@ -14,6 +14,7 @@ struct for_thread {
     struct projectile** projectiles_in_game;
     int** csockets;
     struct sockaddr_in** clients;
+    bool* running;
 };
 
 struct for_thread* for_thread_alloc();

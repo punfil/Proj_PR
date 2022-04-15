@@ -3,12 +3,14 @@ import socket
 import sys
 import time
 from ctypes import *
+
+import constants
 from Networking.payload_tank import PayloadTank
 from Networking.payload_configuration import PayloadConfiguration
 
 
 class Connection:
-    def __init__(self, address="192.168.0.21"):
+    def __init__(self, address="192.168.188.183"):
         self._port = 2137
         self._address = address
         self._socket = None
@@ -25,7 +27,8 @@ class Connection:
             self._socket.settimeout(5.0)
             return True
 
-    def close_connection(self):
+    def close_connection(self, id):
+        self.send_single_tank(id, constants.tank_disconnect_value, constants.tank_disconnect_value)
         self._socket.close()
 
     def receive_single_tank(self):
@@ -46,7 +49,6 @@ class Connection:
             if r:
                 buff = self._socket.recv(sizeof(PayloadConfiguration))  # Here is the problem, sometimes does not receive data and program hangs
                 payload_in = PayloadConfiguration.from_buffer_copy(buff)
-                print("Final, [", payload_in.width, ", ", payload_in.height, "]")
-                return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, 0, payload_in.tank_spawn_x, payload_in.tank_spawn_y
+                return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
             time.sleep(1)
         return 0, 0, 0, 0, 0, 0, 0

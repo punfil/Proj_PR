@@ -15,6 +15,7 @@
 struct for_thread* for_thread_alloc(){
     struct for_thread* self;
     self = (struct for_thread*)malloc(sizeof(struct for_thread));
+    self->running = (bool*)malloc(sizeof(bool));
     if (self == NULL){
         return NULL;
     }
@@ -31,5 +32,6 @@ void for_thread_set_values(struct for_thread* self, int* player_ids, struct tank
 }
 
 void for_thread_free(struct for_thread* self){
+    free(self->running);
     free(self);
 }

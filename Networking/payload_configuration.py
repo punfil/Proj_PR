@@ -11,4 +11,5 @@ class PayloadConfiguration(Structure):
         ("player_id", c_uint32),  # Is that necessary?
         ("tank_spawn_x", c_uint32),
         ("tank_spawn_y", c_uint32),
+        ("map_number", c_uint32),
     ]

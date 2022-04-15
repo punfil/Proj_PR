@@ -195,7 +195,7 @@ void* connection_handler(void* arg){
 
 		//MAIN SEMAPHORE WAIT
 		increment_players_count(&players_count);
-		configuration_set_values(&configuration_to_send, current_player_id, players_count);
+		configuration_update_values(&configuration_to_send, current_player_id, players_count);
 
 		//Send configuration to the new client
 		send_payload(temp_socket, configuration_to_send, sizeof(configuration));
@@ -256,6 +256,4 @@ a) notify server that the client disconnected,
 b) debug and test the code - it has been written but not tested,
 c) implement sender and receiver,
 d) implement semaphores for critical sections,
-e) think of way to transfer map,
-f) change protocol to UDP.
 */

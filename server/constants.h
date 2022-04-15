@@ -7,8 +7,10 @@
 
 #define UPDATE 'u'
 #define CREATE 'n'
+
 #define TANK 't'
 #define PROJECTILE 'p'
+
 #define NOOWNER -1 //For projectiles - they need information who is owner. Tanks don't.
 #define PROJECTILE_HP_ALIVE 1
 
@@ -16,6 +18,9 @@
 #define WINDOW_HEIGHT 600
 #define BACKGROUND_SCALE 50
 #define USED_ID -1
+
+#define PROJECTILE_EXISTS 1
+#define PROJECTILE_NOT_EXISTS 0
 
 
 #endif

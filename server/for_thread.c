@@ -14,7 +14,7 @@
 
 struct for_thread* for_thread_alloc(){
     struct for_thread* self;
-    self = malloc(sizeof(struct for_thread*));
+    self = (struct for_thread*)malloc(sizeof(struct for_thread));
     if (self == NULL){
         return NULL;
     }

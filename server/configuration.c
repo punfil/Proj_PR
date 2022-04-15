@@ -8,7 +8,7 @@
 
 struct configuration* configuration_alloc(){
     struct configuration* self;
-    self = malloc(sizeof(struct configuration*));
+    self = (struct configuration*)malloc(sizeof(struct configuration));
     if (self == NULL){
         return NULL;
     }

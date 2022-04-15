@@ -55,13 +55,13 @@ void* receiver(void* arg);
 int main() {
 	pthread_t main_thread;
 	int result = pthread_create(&main_thread, NULL, connection_handler, NULL);
-	pthread_detach(main_thread);
+	//pthread_detach(main_thread);
 	if (result!=0){
 			printf("Failed to create thread");
 	}
 	while (1){
 		char x;
-		scanf("%c\n", &x);
+		scanf(" %c", &x);
 		if (x == 'q'){
 			break;
 		}
@@ -121,7 +121,6 @@ void* connection_handler(void* arg){
 		printf("Error allocating memory. Bye!\n");
 		return NULL;
 	}
-
 	struct projectile** projectiles_in_game = (struct projectile**)malloc(MAX_PROJECTILES*(sizeof(struct projectile*)));
 	if (projectiles_in_game == NULL){
 		printf("Error allocating memory. Bye!\n");
@@ -154,8 +153,6 @@ void* connection_handler(void* arg){
 
 	struct configuration* configuration_to_send = configuration_alloc();
 	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 0, 0, 0);
-	
-
 
 	//Configure sender process
 	pthread_t sender_thread;
@@ -164,7 +161,6 @@ void* connection_handler(void* arg){
 	if (result!=0){
 			printf("Failed to create sender thread!");
 	}
-
 	//Configure receiver process
 	pthread_t receiver_thread;
 	result = pthread_create(&receiver_thread, NULL, receiver, &for_threads); //Change arguments!!!!
@@ -172,6 +168,7 @@ void* connection_handler(void* arg){
 	if (result!=0){
 			printf("Failed to create receiver thread!");
 	}
+	return NULL;
 
 	int temp_socket;
 	int current_player_id;
@@ -221,33 +218,35 @@ void* connection_handler(void* arg){
 	free(configuration_to_send);
 
 	close_socket(main_socket);
+	pthread_join(receiver_thread, NULL);
+	pthread_join(sender_thread, NULL);
 	return NULL;	
 }
 
 void* sender(void* arg){
-	struct for_thread* my_configuration = (struct for_thread*) arg;
-	while (1){
-		for (int i=0;i<MAX_PLAYERS;i++){
-			if (my_configuration->player_ids[i] == USED_ID){
-				printf("Hello sender!");
-				///Do something
-			}
-		}
-	}
-	return 0;
+	//struct for_thread* my_configuration = (struct for_thread*) arg;
+	// while (1){
+	// 	for (int i=0;i<MAX_PLAYERS;i++){
+	// 		if (my_configuration->player_ids[i] == USED_ID){
+	// 			printf("Hello sender!");
+	// 			///Do something
+	// 		}
+	// 	}
+	// }
+	return NULL;
 }
 
 void* receiver(void* arg){
-	struct for_thread* my_configuration = (struct for_thread*) arg;
-	while (1){
-		for (int i=0;i<MAX_PLAYERS;i++){
-			if (my_configuration->player_ids[i] == USED_ID){
-				printf("Hello receiver!");
-				///Do something
-			}
-		}
-	}
-	return 0;
+	// struct for_thread* my_configuration = (struct for_thread*) arg;
+	// while (1){
+	// 	for (int i=0;i<MAX_PLAYERS;i++){
+	// 		if (my_configuration->player_ids[i] == USED_ID){
+	// 			printf("Hello receiver!");
+	// 			///Do something
+	// 		}
+	// 	}
+	// }
+	// return 0;
 }
 
 /*

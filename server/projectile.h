@@ -1,7 +1,13 @@
 #ifndef PROJECTILE_H
 #define PROJECTILE_H
 
-struct projectile;
+struct projectile{
+    uint32_t owner_id;
+    uint32_t x;
+    uint32_t y;
+    float angle;
+    uint32_t hp;
+};
 
 struct projectile* projectile_alloc();
 

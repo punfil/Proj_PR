@@ -1,7 +1,16 @@
 #ifndef INFORMATION_H
 #define INFORMATION_H
 
-struct information;
+struct information {
+	char action; //Update = movement, create = spawn new tank
+	char type_of; //Projectile or Tank
+	uint32_t player_id; //Player id that this action involves
+	uint32_t x_location; //Location of x
+	uint32_t y_location; //Location of y
+	uint32_t owner_id; //Owner id - only for projectiles
+	float angle; //Angle - for tank turret
+	float hp; //For tanks
+ };
 
 struct information* information_alloc();
 

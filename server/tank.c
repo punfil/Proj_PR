@@ -6,13 +6,6 @@
 
 #include "tank.h"
 
-struct tank {
-	uint32_t player_id;
-	uint32_t x;
-	uint32_t y;
-	float angle;
-	float hp;
-};
 
 struct tank* tank_alloc(){
     struct tank* self;

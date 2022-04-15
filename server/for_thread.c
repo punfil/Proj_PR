@@ -12,15 +12,6 @@
 #include "for_thread.h"
 
 
-
-struct for_thread {
-	int* player_ids;
-    struct tank** tanks_in_game;
-    struct projectile** projectiles_in_game;
-    int** csockets;
-    struct sockaddr_in** clients;
-};
-
 struct for_thread* for_thread_alloc(){
     struct for_thread* self;
     self = malloc(sizeof(struct for_thread*));

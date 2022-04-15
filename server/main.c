@@ -43,7 +43,7 @@
 #endif
 
 int create_socket(int port);
-int close_socket(int sock);
+void close_socket(int sock);
 
 bool send_payload(int sock, void* msg, uint32_t msgsize);
 
@@ -61,12 +61,12 @@ int main() {
 	}
 	while (1){
 		char x;
-		scanf("%c\n", &x)
+		scanf("%c\n", &x);
 		if (x == 'q'){
 			break;
 		}
 	}
-	pthread_join(main_thread);
+	pthread_join(main_thread, NULL);
 	return 0;
 	
 	//Buffers for incoming data
@@ -113,38 +113,38 @@ void* connection_handler(void* arg){
 	int* player_ids = generate_id_list(MAX_PLAYERS);
 	if (player_ids == NULL){
 		printf("Error allocating memory. Bye!\n");
-		return;
-	
+		return NULL;
+	}
 	//Variables for tanks or projectiles
 	struct tank** tanks_in_game = (struct tank**)malloc(MAX_PLAYERS*(sizeof(struct tank*)));
 	if (tanks_in_game == NULL){
 		printf("Error allocating memory. Bye!\n");
-		return;
+		return NULL;
 	}
 
 	struct projectile** projectiles_in_game = (struct projectile**)malloc(MAX_PROJECTILES*(sizeof(struct projectile*)));
 	if (projectiles_in_game == NULL){
 		printf("Error allocating memory. Bye!\n");
-		return;
+		return NULL;
 	}
 
 	//Variables for networking
 	int** csockets = (int**)malloc(MAX_PLAYERS*sizeof(int*));
 	if (csockets == NULL){
 		printf("Error allocating memory. Bye!\n");
-		return;
+		return NULL;
 	}
 
-	struct for_thread* for_threads = (struct for_thread*)malloc(sizeof(for_thread));
+	struct for_thread* for_threads = (struct for_thread*)malloc(sizeof(struct for_thread));
 	if (for_threads == NULL){
 		printf("Error allocating memory. Bye!\n");
-		return;
+		return NULL;
 	}
 
-	struct sockaddr_in** clients = (struct sockaddr_in**)malloc(MAX_PLAYERS*sizeof(sockaddr_in*));
+	struct sockaddr_in** clients = (struct sockaddr_in**)malloc(MAX_PLAYERS*sizeof(struct sockaddr_in*));
 	if (clients == NULL){
 		printf("Error allocating memory. Bye!\n");
-		return;
+		return NULL;
 	}
 
 	int customer_size = sizeof(struct sockaddr_in);
@@ -153,7 +153,7 @@ void* connection_handler(void* arg){
 	printf("Server started listening on port %d\n", PORT);
 
 	struct configuration* configuration_to_send = configuration_alloc();
-	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 0, 0);
+	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 0, 0, 0);
 	
 
 
@@ -167,7 +167,7 @@ void* connection_handler(void* arg){
 
 	//Configure receiver process
 	pthread_t receiver_thread;
-	int result = pthread_create(&receiver_thread, NULL, receiver, &for_threads); //Change arguments!!!!
+	result = pthread_create(&receiver_thread, NULL, receiver, &for_threads); //Change arguments!!!!
 	pthread_detach(receiver_thread);
 	if (result!=0){
 			printf("Failed to create receiver thread!");
@@ -175,7 +175,7 @@ void* connection_handler(void* arg){
 
 	int temp_socket;
 	int current_player_id;
-	struct sock_addr_in temp_information;
+	struct sockaddr_in temp_information;
 	while (1){
 		temp_socket = accept(main_socket, (struct sockaddr*) &temp_information, &customer_size);
 		
@@ -195,20 +195,20 @@ void* connection_handler(void* arg){
 
 		//MAIN SEMAPHORE WAIT
 		increment_players_count(&players_count);
-		configuration_update_values(&configuration_to_send, current_player_id, players_count);
+		configuration_update_values(configuration_to_send, current_player_id, players_count);
 
 		//Send configuration to the new client
-		send_payload(temp_socket, configuration_to_send, sizeof(configuration));
+		send_payload(temp_socket, configuration_to_send, sizeof(struct configuration));
 
 		//This might be a futher function
 		csockets[current_player_id] = (int*)malloc(sizeof(int));
 		//IF NULL
 		*csockets[current_player_id] = temp_socket;
 
-		clients[current_player_id] = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+		clients[current_player_id] = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
 		//IF NULL
 		//sizeof(*) or sizeof()????? memcpy because accept takes pointer, so deepcopy required
-		memcpy(clients[current_player_id], &temp_information, sizeof(sock_addr_in));
+		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
 		//MAIN SEMAPHORE POST
 	}
 
@@ -221,7 +221,7 @@ void* connection_handler(void* arg){
 	free(configuration_to_send);
 
 	close_socket(main_socket);
-	return 0;	
+	return NULL;	
 }
 
 void* sender(void* arg){
@@ -229,7 +229,7 @@ void* sender(void* arg){
 	while (1){
 		for (int i=0;i<MAX_PLAYERS;i++){
 			if (my_configuration->player_ids[i] == USED_ID){
-				printf("Hello sender!")
+				printf("Hello sender!");
 				///Do something
 			}
 		}
@@ -242,7 +242,7 @@ void* receiver(void* arg){
 	while (1){
 		for (int i=0;i<MAX_PLAYERS;i++){
 			if (my_configuration->player_ids[i] == USED_ID){
-				printf("Hello receiver!")
+				printf("Hello receiver!");
 				///Do something
 			}
 		}

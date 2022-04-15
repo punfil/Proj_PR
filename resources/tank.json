@@ -2,10 +2,10 @@
 	"texture": "./Pictures/tank.png",
 	"turret": "./resources/turret.json",
 	"hp": 10,
-	"max_speed": 100,
-	"acceleration": 400,
-	"deceleration": 400,
+	"max_speed": 200,
+	"acceleration": 300,
+	"deceleration": 300,
 	"drag": 200,
-	"turn_rate": 90,
-	"driftiness": 0.5
+	"turn_rate": 135,
+	"driftiness": 0.9
 }

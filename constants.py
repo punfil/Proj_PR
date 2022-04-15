@@ -6,6 +6,7 @@ background_scale = 50
 
 object_collision_damage = 0.5
 object_collision_cooldown = 0.5
+object_collision_speed_multiplier = 0.5
 
 hp_bar_width = 50
 hp_bar_height = 5

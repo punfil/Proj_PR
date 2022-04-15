@@ -1,6 +1,6 @@
 {
 	"texture": "./Pictures/grass.png",
-	"move_speed": 0.75,
+	"move_speed": 0.7,
 	"visibility": 255,
 	"blocks_movement":  false,
 	"blocks_bullets": false,

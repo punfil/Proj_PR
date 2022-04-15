@@ -51,8 +51,9 @@ class Game:
         self._background_scale = constants.background_scale
         self._player_count = 1
         self._my_player_id = 0
-        tank_spawn_x = 500
-        tank_spawn_y = 500  # Can be random received from server or constant spawn point
+
+        tank_spawn_x = 400
+        tank_spawn_y = 400  # Can be random received from server or constant spawn point
 
         self._background_board = BackgroundBoard(self._width, self._height+constants.bar_height, self._background_scale)
 

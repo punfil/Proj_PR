@@ -4,14 +4,23 @@ from math import sin, cos, pi
 from turret import Turret
 from hp_bar import HPBar
 
+FORWARD = 1
+BACKWARD = 0
+
 
 class Tank(pygame.sprite.Sprite):
     def __init__(self, player_no, game, x, y, attributes):
         super().__init__()
         self._player_no = player_no
         self._game = game
+
         self._x = x
         self._y = y
+        self._velocity = pygame.math.Vector2(0, 0)
+        self._angle = 0
+        self._max_speed_multiplier = 1
+        self._direction = FORWARD
+        # direction in which the tank is moving (FORWARD/BACKWARD) - updated only when the tank starts moving
 
         self._hp = attributes["hp"]
         self._max_hp = self._hp
@@ -29,11 +38,6 @@ class Tank(pygame.sprite.Sprite):
 
         self._in_collision = False
         self._collision_cooldown = 0
-
-        self._speed = 0
-        self._angle = 0       # direction the tank is *facing*
-        self._move_angle = 0  # direction the tank is *moving*
-                              # ~it's driftin' time~
 
         self.image = attributes["texture"]
         self.original_image = attributes["texture"]
@@ -53,13 +57,23 @@ class Tank(pygame.sprite.Sprite):
         # forward/backward movement
         velocity_changed = False
         if self.keys[pygame.K_UP]:
-            self.accelerate(self._acceleration * delta_time)
+            if self._direction == FORWARD or self._velocity.magnitude_squared() == 0:
+                self.accelerate(self._acceleration * delta_time)
+            else:
+                self.apply_drag(-self._acceleration * delta_time)
+                # if the tank is moving in the opposite direction, treat the input like drag
             velocity_changed = True
+
         if self.keys[pygame.K_DOWN]:
-            self.accelerate(-self._deceleration * delta_time)
+            if self._direction == BACKWARD or self._velocity.magnitude_squared() == 0:
+                self.accelerate(-self._deceleration * delta_time)
+            else:
+                self.apply_drag(-self._deceleration * delta_time)
+                # if the tank is moving in the opposite direction, treat the input like drag
             velocity_changed = True
+
         if not velocity_changed:
-            self.drag(self._drag * delta_time)
+            self.apply_drag(-self._drag * delta_time)
 
         # turning the tank
         if self.keys[pygame.K_LEFT]:
@@ -67,6 +81,7 @@ class Tank(pygame.sprite.Sprite):
         if self.keys[pygame.K_RIGHT]:
             self.rotate(-self._turn_rate * delta_time)
 
+        # controlling the turret
         if self.keys[pygame.K_q]:
             self.rotate_turret(delta_time)
         if self.keys[pygame.K_e]:
@@ -79,51 +94,89 @@ class Tank(pygame.sprite.Sprite):
 
         self.handle_keyboard(delta_time)
 
-        self._move_angle = self._angle  # drifting doesn't work yet :<
+        if self._velocity.magnitude_squared() != 0:
+            velocity_magnitude = self._velocity.magnitude()
+            angle_vector = pygame.math.Vector2(-sin(self._angle * (pi / 180)),
+                                               -cos(self._angle * (pi / 180)))
+            angle_vector *= velocity_magnitude
 
-        tile_speed = self._game.get_tile_at_screen_position(self._x, self._y).get_attribute("move_speed")
-        dx = -self._speed * sin(self._move_angle * (pi / 180)) * delta_time * tile_speed
-        dy = -self._speed * cos(self._move_angle * (pi / 180)) * delta_time * tile_speed
+            if self._direction == BACKWARD:
+                angle_vector = angle_vector.rotate(180)
+                # if the tank is moving backward, invert the angle vector to make the interpolation work correctly
+                # (so the tank "front" is now on the back, and the velocity and angle vectors are closer together)
 
-        self._in_collision = False
-        if self.check_x_move(dx):
-            self._x += dx
-        else:
-            self._in_collision = True
-        if self.check_y_move(dy):
-            self._y += dy
-        else:
-            self._in_collision = True
+            if self._driftiness > 0:
+                speed_fraction = abs(velocity_magnitude) / (self._max_speed * self._max_speed_multiplier)
+                speed_fraction **= 3
+                # difference between slow and fast drifting is more noticeable when speed_fraction is raised to 3 power
 
-        if self._in_collision and self._collision_cooldown <= 0:
-            self._collision_cooldown = constants.object_collision_cooldown
-            self.offset_hp(-constants.object_collision_damage)
+                lerp_factor = self._driftiness * speed_fraction
+                if lerp_factor > 1:
+                    lerp_factor = 1
+                lerp_factor = 1 - (lerp_factor ** delta_time)
 
-        self.rect.center = (self._x, self._y)
+                self._velocity = self._velocity.lerp(angle_vector, lerp_factor).normalize() * velocity_magnitude
+            else:
+                self._velocity = angle_vector
+
+            dx = self._velocity.x * delta_time
+            dy = self._velocity.y * delta_time
+
+            self._in_collision = False
+            if self.check_x_move(dx):
+                self._x += dx
+            else:
+                self._in_collision = True
+            if self.check_y_move(dy):
+                self._y += dy
+            else:
+                self._in_collision = True
+
+            tile_speed = self._game.get_tile_at_screen_position(self._x, self._y).get_attribute("move_speed")
+            self._max_speed_multiplier = tile_speed
+
+            if self._in_collision:
+                self._max_speed_multiplier *= constants.object_collision_speed_multiplier
+                if self._collision_cooldown <= 0:
+                    self._collision_cooldown = constants.object_collision_cooldown
+                    self.offset_hp(-constants.object_collision_damage)
+
+            self.rect.center = (self._x, self._y)
 
     def accelerate(self, acceleration):
-        """increases/decreases the speed, only in the direction the tank is facing"""
+        """applies acceleration in the direction the tank is facing"""
 
-        self._speed += acceleration
-        self._speed = min(self._speed, self._max_speed)
-        self._speed = max(self._speed, -self._max_speed)  # limit speed when driving backwards
+        if self._velocity.magnitude_squared() == 0:
+            self._direction = FORWARD if acceleration > 0 else BACKWARD
 
-    def drag(self, drag):
-        """slows down the tank (called only when no acceleration input was given)"""
-        if self._speed == 0:
+        self._velocity.x -= acceleration * sin(self._angle * (pi / 180))
+        self._velocity.y -= acceleration * cos(self._angle * (pi / 180))
+
+        max_speed_with_multiplier = self._max_speed * self._max_speed_multiplier
+
+        if self._velocity.magnitude_squared() > max_speed_with_multiplier*max_speed_with_multiplier:
+            self._velocity = self._velocity.normalize() * max_speed_with_multiplier
+
+    def apply_drag(self, drag):
+        """slows down the tank by a given drag value"""
+
+        if self._velocity.magnitude_squared() == 0:
             return
 
-        start_speed = self._speed
-        if self._speed > 0:
-            self._speed -= drag
-        else:
-            self._speed += drag
+        start_velocity = self._velocity.copy()
 
-        if start_speed * self._speed < 0:  # aka if speeds before and after applying drag were in opposite directions
-            self._speed = 0
+        drag_vector = self._velocity.normalize() * drag
+
+        self._velocity.x += drag_vector.x
+        self._velocity.y += drag_vector.y
+
+        if start_velocity.x * self._velocity.x < 0 or start_velocity.y * self._velocity.y < 0:
+            # aka if speeds before and after applying drag were in opposite directions
+            self._velocity.x = 0
+            self._velocity.y = 0
 
     def rotate(self, angle):
-        """rotates the tank left or right, by a given angle"""
+        """rotates the tank by a given angle"""
         self._angle += angle
         self._angle %= 360
 
@@ -179,14 +232,6 @@ class Tank(pygame.sprite.Sprite):
     @y.setter
     def y(self, value):
         self._y = value
-
-    @property
-    def speed(self):
-        return self._speed
-
-    @speed.setter
-    def speed(self, speed):
-        self._speed = speed
 
     @property
     def angle(self):

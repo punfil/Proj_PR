@@ -17,7 +17,7 @@ struct projectile* projectile_alloc(){
     return self;
 }
 
-void set_values(struct projectile* self, uint32_t owner_id, uint32_t x, uint32_t y, float angle, float hp){
+void projectile_set_values(struct projectile* self, uint32_t owner_id, uint32_t x, uint32_t y, float angle, float hp){
     self->owner_id = owner_id;
     self->x = x;
     self->y = y;

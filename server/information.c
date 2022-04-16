@@ -16,14 +16,15 @@ struct information* information_alloc(){
 	return self;
 }
 
-void information_set_values(struct information* self, char action, char type_of, uint32_t player_id, uint32_t x_location, uint32_t y_location, uint32_t owner_id, float angle, float hp){
+void information_set_values(struct information* self, char action, char type_of, uint32_t player_id, uint32_t x_location, uint32_t y_location, uint32_t owner_id, float tank_angle, float hp, float turret_angle){
 	self->action = action;
 	self->type_of = type_of;
 	self->player_id = player_id;
 	self->x_location = x_location;
 	self->y_location = y_location;
-	self->angle = angle;
+	self->tank_angle = tank_angle;
 	self->hp = hp;
+	self->turret_angle = turret_angle;
 }
 
 void information_free(struct information* self){

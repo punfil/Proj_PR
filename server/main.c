@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 //Multithreading
 #include <pthread.h>
@@ -42,10 +43,17 @@
 #include "other_methods.h"
 #endif
 
+#ifndef SINGLY_LINKED_LIST_H
+#include "singly_linked_list.h"
+#endif
+
 int create_socket(int port);
 void close_socket(int sock);
 
 bool send_payload(int sock, void* msg, uint32_t msgsize);
+struct information* receive_single_information(int* sock);
+
+void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
 void* connection_handler(void* arg);
 
@@ -70,11 +78,6 @@ int main() {
 	main_thread_running = false;
 	pthread_join(main_thread, NULL);
 	return 0;
-	
-	//Buffers for incoming data
-	//int BUFFSIZE=512;
-	//char buff[BUFFSIZE];
-	//bzero(buff, BUFFSIZE);
 }
 
 int create_socket(int port){
@@ -108,6 +111,30 @@ bool send_payload(int sock, void* msg, uint32_t msgsize){
 	return true;
 }
 
+//Remember to use free!!!!!
+struct information* receive_single_information(int *sock){
+	char buff[RECEIVER_BUFFER_SIZE];
+	bzero(buff, RECEIVER_BUFFER_SIZE);
+	int nread=read(*sock, buff, RECEIVER_BUFFER_SIZE); //Debug to check if it doesn't wait forever
+	if (nread == 0){
+		return NULL; //Didn't receive any information
+	}
+	struct information* returning = (struct information*)malloc(sizeof(struct information));
+	if (returning == NULL){
+		printf("Error allocating memory receiving information\n");
+	}
+	struct information* received = (struct information*) buff;
+	memcpy(returning, received, sizeof(struct information*));
+	return returning;
+}
+
+void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids){
+	free(csocket);
+	free(client);
+	free(tank);
+	set_id_available(players_ids, player_id);
+}
+
 void* connection_handler(void* arg){
 	bool* running = (bool*) arg;
 	//Variables for connecting and player recognition
@@ -124,11 +151,8 @@ void* connection_handler(void* arg){
 		printf("Error allocating memory. Bye!\n");
 		return NULL;
 	}
-	struct projectile** projectiles_in_game = (struct projectile**)malloc(MAX_PROJECTILES*(sizeof(struct projectile*)));
-	if (projectiles_in_game == NULL){
-		printf("Error allocating memory. Bye!\n");
-		return NULL;
-	}
+
+	struct singly_linked_node* projectiles_in_game = NULL;
 
 	//Variables for networking
 	int** csockets = (int**)malloc(MAX_PLAYERS*sizeof(int*));
@@ -176,6 +200,9 @@ void* connection_handler(void* arg){
 	int current_player_id;
 	struct sockaddr_in temp_information;
 	printf("Server started listening on port %d\n", PORT);
+	struct timeval tv;
+	tv.tv_sec = 0;
+    tv.tv_usec = CLIENT_MOVE_WAIT;
 	while (*running){
 		temp_socket = accept(main_socket, (struct sockaddr*) &temp_information, &customer_size);
 
@@ -204,11 +231,25 @@ void* connection_handler(void* arg){
 
 		//This might be a futher function
 		csockets[current_player_id] = (int*)malloc(sizeof(int));
-		//IF NULL
+		if (csockets[current_player_id] == NULL){
+			printf("Error allocating memory!\n");
+			return NULL;
+		}
 		*csockets[current_player_id] = temp_socket;
+		setsockopt(*(csockets[current_player_id]), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
 
 		clients[current_player_id] = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
-		//IF NULL
+		if (clients[current_player_id] == NULL){
+			printf("Error allocating memory!\n");
+			return NULL;
+		}
+
+		tanks_in_game[current_player_id] = (struct tank*)malloc(sizeof(struct tank));
+		if (tanks_in_game[current_player_id] == NULL){
+			printf("Error allocating memory!\n");
+			return NULL;
+		}
+		
 		//sizeof(*) or sizeof()????? memcpy because accept takes pointer, so deepcopy required
 		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
 		//MAIN SEMAPHORE POST
@@ -249,8 +290,38 @@ void* receiver(void* arg){
 	while (my_configuration->running){
 		for (int i=0;i<MAX_PLAYERS;i++){
 			if (my_configuration->player_ids[i] == USED_ID){
-				//printf("Hello receiver!");
-				///Do something
+				//Check connection alive. If not free the memory.
+				// if (){
+				// 	clean_up_after_disconnect(my_configuration->csockets[i], my_configuration->clients[i], my_configuration->tanks_in_game[i], i, my_configuration->player_ids);
+				// }
+
+				//Receive information. If the function returned NULL -> allocation error or no information to be received.
+				struct information* received = receive_single_information(my_configuration->csockets[i]);
+				if (received == NULL){ //No information has been received
+					continue;
+				}
+				
+				if (received->action == CREATE){
+					//Create a projectile in the system. When projectile crashes or it's lifetime ends call free()!
+					struct projectile* new_projectile = projectile_alloc();
+					if (new_projectile == NULL){
+						printf("Error allocating memory...");
+						continue;
+					}
+					projectile_set_values(new_projectile, i, received->x_location, received->y_location, received->tank_angle, received->hp);
+					
+					//Semaphore begin!
+					singly_linked_list_add(my_configuration->projectiles_in_game, new_projectile);
+					//Semaphore end
+				}
+				else if (received->action == UPDATE){
+					//Update tank position
+					//Semaphore!!!
+					tank_update(my_configuration->tanks_in_game[i], received->x_location, received->y_location, received->tank_angle, received->hp, received->turret_angle);
+				}
+				else{
+					printf("Received wrong command!\n");
+				}
 			}
 		}
 	}

@@ -111,7 +111,7 @@ bool send_payload(int sock, void* msg, uint32_t msgsize){
 void* connection_handler(void* arg){
 	bool* running = (bool*) arg;
 	//Variables for connecting and player recognition
-	int players_count = 2;
+	int players_count = 0;
 
 	int* player_ids = generate_id_list(MAX_PLAYERS);
 	if (player_ids == NULL){
@@ -154,7 +154,7 @@ void* connection_handler(void* arg){
 	int main_socket = create_socket(PORT);
 
 	struct configuration* configuration_to_send = configuration_alloc();
-	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 500, 500, 0);
+	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, 0, 0, 400, 400, 0);
 
 	//Configure sender process
 	pthread_t sender_thread;

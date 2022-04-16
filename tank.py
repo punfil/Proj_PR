@@ -9,7 +9,7 @@ BACKWARD = 0
 
 
 class Tank(pygame.sprite.Sprite):
-    def __init__(self, player_no, game, x, y, attributes):
+    def __init__(self, player_no, game, x, y, attributes, game_owner_id):
         super().__init__()
         self._player_no = player_no
         self._game = game
@@ -20,6 +20,7 @@ class Tank(pygame.sprite.Sprite):
         self._angle = 0
         self._max_speed_multiplier = 1
         self._direction = FORWARD
+        self._game_owner_id = game_owner_id
         # direction in which the tank is moving (FORWARD/BACKWARD) - updated only when the tank starts moving
 
         self._hp = attributes["hp"]
@@ -92,7 +93,9 @@ class Tank(pygame.sprite.Sprite):
     def update(self, delta_time):
         self._collision_cooldown -= delta_time
 
-        self.handle_keyboard(delta_time)
+        # Not every tank should be moved by this client
+        if self._player_no == self._game_owner_id:
+            self.handle_keyboard(delta_time)
 
         if self._velocity.magnitude_squared() != 0:
             velocity_magnitude = self._velocity.magnitude()

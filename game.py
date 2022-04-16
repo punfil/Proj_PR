@@ -49,14 +49,17 @@ class Game:
         self._width = constants.window_width  # Those values need to be downloaded from socket
         self._height = constants.window_height
         self._background_scale = constants.background_scale
-        self._player_count = 1
-        self._my_player_id = 0
+        self._player_count = 4
+        self._my_player_id = 3
 
         tank_spawn_x = 400
         tank_spawn_y = 400  # Can be random received from server or constant spawn point
+        map_no = 0
 
-        self._background_board = BackgroundBoard(self._width, self._height+constants.bar_height, self._background_scale)
+        self._background_board = BackgroundBoard(self._width, self._height + constants.bar_height,
+                                                 self._background_scale)
 
+        # TODO Map number - variable "map_no
         self.load_map("save.json")
 
         pygame.init()
@@ -71,7 +74,8 @@ class Game:
         self._hp_bars_sprites_group = pygame.sprite.Group()
         self._tanks = []
         for i in range(self._player_count):
-            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
+            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"),
+                        self._my_player_id)
             self._tanks_sprites_group.add(tank)
             self._turrets_sprites_group.add(tank.turret)
             self._hp_bars_sprites_group.add(tank.hp_bar)
@@ -94,7 +98,7 @@ class Game:
 
         for x in range(width):
             for y in range(height):
-                char = save_data["tiles_string"][x + y*width]
+                char = save_data["tiles_string"][x + y * width]
                 tile_file = save_data["tiles"][char]
                 tile_attributes = self.load_resource(tile_file)
                 tile = Tile(x, y, tile_attributes)
@@ -115,11 +119,11 @@ class Game:
 
     def get_tile_at_screen_position(self, x, y):
         """returns tile from background board corresponding to the given (x,y) screen position"""
-        return self._background_board.get_tile(int(x/self._background_scale), int(y/self._background_scale))
+        return self._background_board.get_tile(int(x / self._background_scale), int(y / self._background_scale))
 
     def screen_position_to_grid_position(self, x, y):
         """converts screen position (in pixels) to grid position (in tiles)"""
-        return int(x/self._background_scale), int(y/self._background_scale)
+        return int(x / self._background_scale), int(y / self._background_scale)
 
     def exit_game(self):
         """closes the connection with server and exits game"""

@@ -68,6 +68,7 @@ class Game:
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
         self._clock = pygame.time.Clock()
 
+        # todo - I want to somehow merge all these different sprite groups into one big group with different layers.
         self._tanks_sprites_group = pygame.sprite.Group()
         self._turrets_sprites_group = pygame.sprite.Group()
         self._projectiles_sprites_group = pygame.sprite.Group()
@@ -132,6 +133,14 @@ class Game:
     def add_projectile(self, projectile):
         """adds a new projectile to the projectiles sprite group"""
         self._projectiles_sprites_group.add(projectile)
+
+    def add_hp_bar(self, hp_bar):
+        """adds hp bar to the hp bars sprite group"""
+        self._hp_bars_sprites_group.add(hp_bar)
+
+    def remove_hp_bar(self, hp_bar):
+        """removes hp bar from the hp bars sprite group"""
+        hp_bar.kill()
 
     def play(self):
         """runs the game"""

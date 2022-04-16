@@ -34,7 +34,26 @@ class Tank(pygame.sprite.Sprite):
         turret_attributes = self._game.load_resource(attributes["turret"])
         self._turret = Turret(self, self._game, turret_attributes)
 
-        self._hp_bar = HPBar(self)
+        self._hp_bar = HPBar(self, self._max_hp,
+                             constants.hp_bar_width, constants.hp_bar_height, constants.hp_bar_y_offset,
+                             constants.hp_bar_filled_color, constants.hp_bar_empty_color)
+
+        shield_attributes = self._game.load_resource(attributes["shield"])
+        self._shield_active = False
+        self._shield_image = shield_attributes["texture"]
+        self._shield_max_hp = shield_attributes["hp"]
+        self._shield_hp = shield_attributes["hp"]
+        self._shield_cooldown = shield_attributes["cooldown"]
+        self._shield_current_cooldown = 0
+        self._shield_decay = shield_attributes["decay"]
+
+        self._shield_bar = HPBar(self, self._shield_max_hp,
+                                 constants.shield_bar_width, constants.shield_bar_height, constants.shield_bar_y_offset,
+                                 constants.shield_bar_filled_color, constants.shield_bar_empty_color)
+
+        self._shield = pygame.sprite.Sprite()
+        self._shield.image = self._shield_image
+        self._shield.rect = self._shield_image.get_rect()
 
         self._in_collision = False
         self._collision_cooldown = 0
@@ -92,8 +111,17 @@ class Tank(pygame.sprite.Sprite):
         if self.keys[pygame.K_w]:
             self._turret.shoot()
 
+        # activating the shield
+        if self.keys[pygame.K_s]:
+            self.activate_shield()
+
     def update(self, delta_time):
         self._collision_cooldown -= delta_time
+
+        if self._shield_active:
+            self.offset_shield_hp(-self._shield_decay * delta_time)
+        else:
+            self._shield_current_cooldown -= delta_time
 
         self.handle_keyboard(delta_time)
 
@@ -146,6 +174,9 @@ class Tank(pygame.sprite.Sprite):
 
             self.rect.center = (self._x, self._y)
 
+            if self._shield_active:
+                self._shield.rect.center = self.rect.center
+
     def accelerate(self, acceleration):
         """applies acceleration in the direction the tank is facing"""
 
@@ -191,10 +222,36 @@ class Tank(pygame.sprite.Sprite):
         """rotates the tank turret by a given angle"""
         self._turret.rotate(angle)
 
+    def activate_shield(self):
+        """activates the shield if it is ready (cooldown <= 0)"""
+        if not self._shield_active and self._shield_current_cooldown <= 0:
+            self._shield_active = True
+            self._shield_current_cooldown = self._shield_cooldown
+            self._shield_hp = self._shield_max_hp
+            self._shield_bar.update_hp(self._shield_hp)
+            self._game.add_hp_bar(self._shield_bar)
+            self._shield.rect.center = self.rect.center
+            self.groups()[0].add(self._shield)  # a bit hacky but whatever
+
     def offset_hp(self, value):
         """changes the tank's hp by a given value"""
-        self._hp += value
-        self._hp_bar.update_hp()
+        if not self._shield_active:
+            self._hp += value
+            self._hp_bar.update_hp(self._hp)
+        else:
+            self.offset_shield_hp(value)
+
+    def offset_shield_hp(self, value):
+        """changes the tank's shield hp by a given value. Disables the shield if its hp is lesser or equal to 0"""
+        self._shield_hp += value
+
+        if self._shield_hp <= 0:
+            self._shield_active = False
+            self._shield_current_cooldown = self._shield_cooldown
+            self._shield.kill()  # a bit hacky but whatever
+            self._game.remove_hp_bar(self._shield_bar)
+        else:
+            self._shield_bar.update_hp(self._shield_hp)
 
     def check_y_move(self, value):
         """checks if the tank can move to position (x, y+value)"""

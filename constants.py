@@ -11,6 +11,14 @@ object_collision_speed_multiplier = 0.5
 hp_bar_width = 50
 hp_bar_height = 5
 hp_bar_y_offset = -25
+hp_bar_filled_color = "#00ff00"
+hp_bar_empty_color = "#ff0000"
+
+shield_bar_width = 50
+shield_bar_height = 5
+shield_bar_y_offset = -30
+shield_bar_filled_color = "#0077ff"
+shield_bar_empty_color = "#cccccc"
 
 tank_disconnect_value = -1
 

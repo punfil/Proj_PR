@@ -74,8 +74,7 @@ class Game:
         self._hp_bars_sprites_group = pygame.sprite.Group()
         self._tanks = []
         for i in range(self._player_count):
-            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"),
-                        self._my_player_id)
+            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
             self._turrets_sprites_group.add(tank.turret)
             self._hp_bars_sprites_group.add(tank.hp_bar)

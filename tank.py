@@ -9,7 +9,7 @@ BACKWARD = 0
 
 
 class Tank(pygame.sprite.Sprite):
-    def __init__(self, player_no, game, x, y, attributes):
+    def __init__(self, player_no, game, x, y, angle, attributes):
         super().__init__()
         self._player_no = player_no
         self._game = game
@@ -17,7 +17,7 @@ class Tank(pygame.sprite.Sprite):
         self._x = x
         self._y = y
         self._velocity = pygame.math.Vector2(0, 0)
-        self._angle = 0
+        self._angle = 0  # if the angle given in __init__ was not 0, the tank will be rotated later
         self._max_speed_multiplier = 1
         self._direction = FORWARD
         # direction in which the tank is moving (FORWARD/BACKWARD) - updated only when the tank starts moving
@@ -63,6 +63,9 @@ class Tank(pygame.sprite.Sprite):
         # ^required, because repeatedly rotating the same image decreases its quality and increases size^
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
+
+        if angle != 0:
+            self.rotate(angle)
 
         self.keys = []  # keys pressed by player
 

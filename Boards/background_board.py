@@ -1,9 +1,12 @@
 import json
 import pygame
+from tile import Tile
 
 
 class BackgroundBoard:
-    def __init__(self, width, height, scale):
+    def __init__(self, game, width, height, scale):
+        self._game = game
+
         self._width = width // scale
         self._height = height // scale
         self._scale = scale
@@ -41,10 +44,10 @@ class BackgroundBoard:
 
         self._updated_tiles = []
 
-    def save(self, filename):
-        """saves the board to the specified file"""
+    def serialize(self):
+        """serializes the board into a dict object"""
 
-        save_data = {
+        board_data = {
             "width": self._width,
             "height": self._height,
         }
@@ -69,12 +72,24 @@ class BackgroundBoard:
 
         chars_to_tiles = {value: key for key, value in tiles_to_chars.items()}  # inverting the dict
 
-        save_data["tiles"] = chars_to_tiles
-        save_data["tiles_string"] = tiles_string
+        board_data["tiles"] = chars_to_tiles
+        board_data["tiles_string"] = tiles_string
 
-        with open(filename, 'w') as file:
-            json.dump(save_data, file)
-        print("saved!")
+        return board_data
+
+    def deserialize(self, board_data):
+        """deserializes the board from a dict object"""
+
+        self._width = board_data["width"]
+        self._height = board_data["height"]
+
+        for x in range(self._width):
+            for y in range(self._height):
+                char = board_data["tiles_string"][x + y * self._width]
+                tile_file = board_data["tiles"][char]
+                tile_attributes = self._game.load_resource(tile_file)
+                tile = Tile(x, y, tile_attributes)
+                self.set_tile(x, y, tile)
 
     @property
     def width(self):

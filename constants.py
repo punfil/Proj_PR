@@ -22,5 +22,6 @@ shield_bar_empty_color = "#cccccc"
 
 tank_disconnect_value = -1
 
+spawn_point_rotation_angle = 22.5
 default_map_editor_tile = "./resources/grass.json"
 map_editor_tiles = ["./resources/grass.json", "./resources/asphalt.json", "./resources/house.json"]

@@ -34,6 +34,8 @@ class Game:
         self._background_board = None
         self._background_scale = None
 
+        self._spawn_points = None
+
         self._clock = None
 
     def setup(self):
@@ -52,12 +54,9 @@ class Game:
         self._player_count = 4
         self._my_player_id = 3
 
-        tank_spawn_x = 400
-        tank_spawn_y = 400  # Can be random received from server or constant spawn point
         map_no = 0
 
-        self._background_board = BackgroundBoard(self._width, self._height + constants.bar_height,
-                                                 self._background_scale)
+        self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
 
         # TODO Map number - variable "map_no
         self.load_map("save.json")
@@ -68,14 +67,22 @@ class Game:
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
         self._clock = pygame.time.Clock()
 
+        # changing spawn_points coordinates from grid units to pixels
+        for sp in self._spawn_points:
+            sp[0] = sp[0] * self._background_scale + self._background_scale/2
+            sp[1] = sp[1] * self._background_scale + self._background_scale/2
+
         # todo - I want to somehow merge all these different sprite groups into one big group with different layers.
         self._tanks_sprites_group = pygame.sprite.Group()
         self._turrets_sprites_group = pygame.sprite.Group()
         self._projectiles_sprites_group = pygame.sprite.Group()
         self._hp_bars_sprites_group = pygame.sprite.Group()
+
         self._tanks = []
         for i in range(self._player_count):
-            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, self.load_resource("resources/tank.json"))
+            spawn_point = self._spawn_points[i % len(self._spawn_points)]
+            tank = Tank(i, self, spawn_point[0], spawn_point[1], spawn_point[2],
+                        self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
             self._turrets_sprites_group.add(tank.turret)
             self._hp_bars_sprites_group.add(tank.hp_bar)
@@ -90,19 +97,8 @@ class Game:
         with open(filename, 'r') as file:
             save_data = json.load(file)
 
-        width = save_data["width"]
-        height = save_data["height"]
-
-        self._background_board.width = width
-        self._background_board.height = height
-
-        for x in range(width):
-            for y in range(height):
-                char = save_data["tiles_string"][x + y * width]
-                tile_file = save_data["tiles"][char]
-                tile_attributes = self.load_resource(tile_file)
-                tile = Tile(x, y, tile_attributes)
-                self._background_board.set_tile(x, y, tile)
+        self._background_board.deserialize(save_data["map_data"])
+        self._spawn_points = save_data["spawn_points"]
 
     def load_resource(self, filename):
         """loads a json resource file. Automatically converts textures to pygame images"""

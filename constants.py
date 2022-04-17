@@ -23,3 +23,4 @@ shield_bar_empty_color = "#cccccc"
 tank_disconnect_value = -1
 
 default_map_editor_tile = "./resources/grass.json"
+map_editor_tiles = ["./resources/grass.json", "./resources/asphalt.json", "./resources/house.json"]

@@ -85,6 +85,9 @@ class MapEditor(Game):
         self.hide_cursor("y_symmetry")
         self.hide_cursor("point_symmetry")
 
+        tile_index = 0
+        current_tile = constants.map_editor_tiles[tile_index]
+
         while True:
             self._clock.tick(60)
 
@@ -113,6 +116,10 @@ class MapEditor(Game):
                             self.hide_cursor("x_symmetry")
                             self.hide_cursor("y_symmetry")
 
+                    elif ev.key == pygame.K_c:
+                        tile_index = (tile_index + 1) % len(constants.map_editor_tiles)
+                        current_tile = constants.map_editor_tiles[tile_index]
+
                     elif ev.key == pygame.K_s:
                         self._background_board.save("save.json")
 
@@ -129,17 +136,17 @@ class MapEditor(Game):
             self.set_cursor_positions(grid_x, grid_y, symmetry_x, symmetry_y)
 
             if pygame.mouse.get_pressed()[0]:
-                tile = Tile(grid_x, grid_y, self.load_resource("./resources/house.json"))
+                tile = Tile(grid_x, grid_y, self.load_resource(current_tile))
                 self._background_board.set_tile(grid_x, grid_y, tile)
 
                 if x_symmetry:
-                    tile = Tile(symmetry_x, grid_y, self.load_resource("./resources/house.json"))
+                    tile = Tile(symmetry_x, grid_y, self.load_resource(current_tile))
                     self._background_board.set_tile(symmetry_x, grid_y, tile)
                 if y_symmetry:
-                    tile = Tile(grid_x, symmetry_y, self.load_resource("./resources/house.json"))
+                    tile = Tile(grid_x, symmetry_y, self.load_resource(current_tile))
                     self._background_board.set_tile(grid_x, symmetry_y, tile)
                 if (x_symmetry and y_symmetry) or point_symmetry:
-                    tile = Tile(symmetry_x, symmetry_y, self.load_resource("./resources/house.json"))
+                    tile = Tile(symmetry_x, symmetry_y, self.load_resource(current_tile))
                     self._background_board.set_tile(symmetry_x, symmetry_y, tile)
 
             self._cursors_sprites_group.clear(self._screen, self._background_board.background_surface)

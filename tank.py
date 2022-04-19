@@ -161,10 +161,12 @@ class Tank(pygame.sprite.Sprite):
                 self._x += dx
             else:
                 self._in_collision = True
+                self._velocity.x = 0
             if self.check_y_move(dy):
                 self._y += dy
             else:
                 self._in_collision = True
+                self._velocity.y = 0
 
             tile_speed = self._game.get_tile_at_screen_position(self._x, self._y).get_attribute("move_speed")
             self._max_speed_multiplier = tile_speed

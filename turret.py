@@ -18,8 +18,11 @@ class Turret(pygame.sprite.Sprite):
         self._max_left_angle = attributes["max_left_angle"]
         self._max_right_angle = attributes["max_right_angle"]
         self._cooldown = attributes["cooldown"]
-        self._projectile_offset = attributes["projectile_offset"]
+        self._projectile_offsets = attributes["projectile_offsets"]
+        self._projectiles_per_shot = attributes["projectiles_per_shot"]
         self._inaccuracy = attributes["inaccuracy"]
+
+        self._projectile_offset_index = 0
 
         self._ammo = self._game.load_resource(attributes["ammo"])
 
@@ -62,18 +65,26 @@ class Turret(pygame.sprite.Sprite):
 
         if self._current_cooldown <= 0:
             self._current_cooldown = self._cooldown
-            # x offset
-            projectile_x = self._projectile_offset[0] * cos(-self._absolute_angle * (pi / 180))
-            projectile_y = self._projectile_offset[0] * sin(-self._absolute_angle * (pi / 180))
 
-            # y offset
-            projectile_x += -self._projectile_offset[1] * sin(self._absolute_angle * (pi / 180))
-            projectile_y += -self._projectile_offset[1] * cos(self._absolute_angle * (pi / 180))
+            for i in range(self._projectiles_per_shot):
+                offset = self._projectile_offsets[self._projectile_offset_index]
 
-            projectile_x += self._tank.x
-            projectile_y += self._tank.y
+                # x offset
+                projectile_x = offset[0] * cos(-self._absolute_angle * (pi / 180))
+                projectile_y = offset[0] * sin(-self._absolute_angle * (pi / 180))
 
-            projectile_angle = self._absolute_angle + (random.random()-0.5) * self._inaccuracy*2
+                # y offset
+                projectile_x += -offset[1] * sin(self._absolute_angle * (pi / 180))
+                projectile_y += -offset[1] * cos(self._absolute_angle * (pi / 180))
 
-            projectile = Projectile(self._tank, projectile_x, projectile_y, projectile_angle, self._ammo)
-            self._game.add_projectile(projectile)
+                projectile_x += self._tank.x
+                projectile_y += self._tank.y
+
+                projectile_angle = self._absolute_angle - offset[2]
+                projectile_angle += (random.random()-0.5) * self._inaccuracy*2
+
+                projectile = Projectile(self._tank, projectile_x, projectile_y, projectile_angle, self._ammo)
+                self._game.add_projectile(projectile)
+
+                self._projectile_offset_index += 1
+                self._projectile_offset_index %= len(self._projectile_offsets)

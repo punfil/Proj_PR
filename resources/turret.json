@@ -7,5 +7,11 @@
 	"max_right_angle": 150,
 	"inaccuracy": 5,
 	"cooldown": 0.5,
-	"projectile_offset": [0, 40]
+	"projectile_offsets": [
+		[-10, 40, -10],
+		[10, 40, 10],
+		[0, 40, 0],
+		[0, 0, -180]
+	],
+	"projectiles_per_shot": 2
 }

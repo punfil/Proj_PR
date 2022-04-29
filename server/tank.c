@@ -9,7 +9,7 @@
 
 struct tank* tank_alloc(){
     struct tank* self;
-    self = malloc(sizeof(struct tank*));
+    self = (struct tank*)malloc(sizeof(struct tank));
     if (self == NULL){
         return NULL;
     }

@@ -6,6 +6,7 @@ import pygame
 import sys
 import constants
 import json
+import threading
 
 
 class Game:
@@ -19,6 +20,7 @@ class Game:
 
         # Connection related variables
         self._connection = None
+        self._mutex = threading.Lock()  # This will be used for receiving information + reading from memory.
 
         # Tank related variables
         self._my_tank = None  # For easier access
@@ -44,17 +46,17 @@ class Game:
         # self._connection = Connection()
         # if not self._connection.establish_connection():
         #     return False
+        # Change below
         # self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_single_configuration()
         # if self._width == 0:
         #     return False
+        # Is the player count needed? I don't think so
 
         self._width = constants.window_width  # Those values need to be downloaded from socket
         self._height = constants.window_height
         self._background_scale = constants.background_scale
         self._player_count = 4
         self._my_player_id = 3
-
-        map_no = 0
 
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
 
@@ -123,7 +125,7 @@ class Game:
 
     def exit_game(self):
         """closes the connection with server and exits game"""
-        self._connection.close_connection(self._my_player_id)
+        self._connection.close_connection()
         sys.exit(0)
 
     def add_projectile(self, projectile):

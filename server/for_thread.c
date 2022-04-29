@@ -23,13 +23,12 @@ struct for_thread* for_thread_alloc(){
     return self;
 }
 
-void for_thread_set_values(struct for_thread* self, int* player_ids, struct tank** tanks_in_game, struct singly_linked_node* projectiles_in_game, int** csockets, struct sockaddr_in** clients, int* players_count){
+void for_thread_set_values(struct for_thread* self, int* player_ids, struct tank** tanks_in_game, struct singly_linked_node* projectiles_in_game, int** csockets, struct sockaddr_in** clients){
     self->player_ids = player_ids;
     self->tanks_in_game = tanks_in_game;
     self->projectiles_in_game = projectiles_in_game;
     self->csockets = csockets;
     self->clients = clients;
-    self->players_count = players_count;
 }
 
 void for_thread_free(struct for_thread* self){

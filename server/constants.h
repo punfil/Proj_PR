@@ -6,12 +6,10 @@
 #define MAX_PROJECTILES 64
 
 #define UPDATE 'u'
-#define CREATE 'c'
-#define DISCONNECT 'd'
+#define CREATE 'n'
 
 #define TANK 't'
 #define PROJECTILE 'p'
-#define TURRET 'r'
 
 #define NOOWNER -1 //For projectiles - they need information who is owner. Tanks don't.
 #define PROJECTILE_HP_ALIVE 1

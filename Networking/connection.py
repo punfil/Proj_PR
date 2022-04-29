@@ -1,21 +1,19 @@
+import select
 import socket
-import threading  # If client is not already enough fun :)
+import sys
+import time
+from ctypes import *
 
 import constants
-from Networking.receiver import Receiver
-
-from Networking.payload_information import PayloadInformation
+from Networking.payload_tank import PayloadTank
+from Networking.payload_configuration import PayloadConfiguration
 
 
 class Connection:
-    def __init__(self, player_id, game, address=constants.default_game_server_ip):
+    def __init__(self, address="192.168.188.183"):
         self._port = 2137
         self._address = address
         self._socket = None
-        self._receiver = None
-        self._receiver_thread = None
-        self._player_id = player_id
-        self._game = game
 
     def establish_connection(self):
         try:
@@ -27,35 +25,30 @@ class Connection:
             return False
         finally:
             self._socket.settimeout(5.0)
-            self._receiver = Receiver(self._socket, self._game)
-            self._receiver_thread = threading.Thread(target=self._receiver.receive_multiple_information)
-            self._receiver_thread.start()
             return True
 
-    def close_connection(self):
-        self.send_disconnect_information()
-        self._receiver.terminate()
+    def close_connection(self, id):
+        self.send_single_tank(id, constants.tank_disconnect_value, constants.tank_disconnect_value)
         self._socket.close()
 
-    def send_disconnect_information(self):
-        self.send_single_information(constants.information_disconnect, constants.information_disconnect,
-                                     self._player_id, -1, -1, 0.0, 0.0, 0.0)
-        #  Those variables are random, server first checks the disconnect information and closes the connection.
+    def receive_single_tank(self):
+        buff = self._socket.recv(sizeof(PayloadTank))
+        payload_in: PayloadTank = PayloadTank.from_buffer_copy(buff)
+        return payload_in.player_id, payload_in.x_location, payload_in.y_location
 
-    def send_single_information(self, action, type_of, player_id, x_location, y_location, tank_angle, hp, turret_angle):
-        payload_out = PayloadInformation(action, type_of, player_id, x_location, y_location, tank_angle, hp,
-                                         turret_angle)
+    def send_single_tank(self, id, x, y):
+        payload_out = PayloadTank(id, x, y)
         nsent = self._socket.send(payload_out)
         if nsent:
             return True
         return False
 
-    @property
-    def receiver(self):
-        return self._receiver
-
-    @receiver.setter
-    def receiver(self, receiver):
-        self._receiver = receiver
-
-    # To my best knowledge I think that thread for sending information is not needed. Might be changed if it's required
+    def receive_single_configuration(self):
+        for i in range(5):
+            r, _, _ = select.select([self._socket], [], [], 0)
+            if r:
+                buff = self._socket.recv(sizeof(PayloadConfiguration))  # Here is the problem, sometimes does not receive data and program hangs
+                payload_in = PayloadConfiguration.from_buffer_copy(buff)
+                return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
+            time.sleep(1)
+        return 0, 0, 0, 0, 0, 0, 0

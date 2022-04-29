@@ -20,18 +20,7 @@ shield_bar_y_offset = -30
 shield_bar_filled_color = "#0077ff"
 shield_bar_empty_color = "#cccccc"
 
-# Networking variables
-game_port = 2137
-default_game_server_ip = "192.168.188.183"
-information_update = 'u'
-information_create = 'c'
-information_disconnect = 'd'
-information_tank = 't'
-information_projectile = 'p'
-information_turret = 'r'
-receiver_sleep_time = 0.1
-configuration_receive_timeout = 1
-configuration_receive_error = -1
+tank_disconnect_value = -1
 
 spawn_point_rotation_angle = 22.5
 default_map_editor_tile = "./resources/grass.json"

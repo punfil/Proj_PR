@@ -4,15 +4,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-//Multithreading
-#include <pthread.h>
-#include <semaphore.h>
-
 //Networking
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+
+//Multithreading
+#include <pthread.h>
+#include <semaphore.h>
 
 
 #ifndef TANK_H
@@ -115,7 +115,6 @@ bool send_payload(int sock, void* msg, uint32_t msgsize){
 struct information* receive_single_information(int *sock){
 	char buff[RECEIVER_BUFFER_SIZE];
 	bzero(buff, RECEIVER_BUFFER_SIZE);
-	int available;
 	int nread=read(*sock, buff, RECEIVER_BUFFER_SIZE); //Debug to check if it doesn't wait forever
 	if (nread == 0){
 		return NULL; //Didn't receive any information
@@ -173,7 +172,7 @@ void* connection_handler(void* arg){
 		printf("Error allocating memory. Bye!\n");
 		return NULL;
 	}
-	for_thread_set_values(for_threads, player_ids, tanks_in_game, projectiles_in_game, csockets, clients, &players_count);
+	for_thread_set_values(for_threads, player_ids, tanks_in_game, projectiles_in_game, csockets, clients);
 
 	int customer_size = sizeof(struct sockaddr_in);
 	int main_socket = create_socket(PORT);
@@ -301,6 +300,7 @@ void* receiver(void* arg){
 				if (received == NULL){ //No information has been received
 					continue;
 				}
+				
 				if (received->action == CREATE){
 					//Create a projectile in the system. When projectile crashes or it's lifetime ends call free()!
 					struct projectile* new_projectile = projectile_alloc();
@@ -310,24 +310,18 @@ void* receiver(void* arg){
 					}
 					projectile_set_values(new_projectile, i, received->x_location, received->y_location, received->tank_angle, received->hp);
 					
-					//Semaphore WAIT!
+					//Semaphore begin!
 					singly_linked_list_add(my_configuration->projectiles_in_game, new_projectile);
-					//Semaphore POST
+					//Semaphore end
 				}
 				else if (received->action == UPDATE){
 					//Update tank position
-					//Semaphore WAIT
+					//Semaphore!!!
 					tank_update(my_configuration->tanks_in_game[i], received->x_location, received->y_location, received->tank_angle, received->hp, received->turret_angle);
-					//Semaphore POST
-				}
-				else if (received->action == DISCONNECT){
-					clean_up_after_disconnect(my_configuration->csockets[i], my_configuration->clients[i], my_configuration->tanks_in_game[i], i, my_configuration->player_ids);
-					//Send to other players that the player has disconnected!
 				}
 				else{
 					printf("Received wrong command!\n");
 				}
-				free(received);
 			}
 		}
 	}

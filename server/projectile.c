@@ -9,7 +9,7 @@
 
 struct projectile* projectile_alloc(){
     struct projectile* self;
-    self = (struct projectile*)malloc(sizeof(struct projectile));
+    self = malloc(sizeof(struct projectile*));
     if (self == NULL){
         return NULL;
     }

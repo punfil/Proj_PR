@@ -8,7 +8,7 @@
 
 struct information* information_alloc(){
 	struct information* self;
-	self = (struct information*)malloc(sizeof(struct information));
+	self = malloc(sizeof(struct information*));
 	if (self==NULL){
 		return NULL;
 	}

@@ -31,9 +31,9 @@ void set_id_available(int* all_ids, int which){
 
 void increment_players_count(int* players_count){
     //Semaphore to be implemented
-    (*players_count)++;
+    ++(*players_count);
 }
 void decrement_players_count(int* players_count){
     //Semaphore to be implemented
-    (*players_count)--;
+    --(*players_count);
 }

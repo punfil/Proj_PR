@@ -47,6 +47,9 @@
 #include "singly_linked_list.h"
 #endif
 
+pthread_mutex_t all_mutexes[MAX_PLAYERS];
+void initialize_mutexes();
+
 int create_socket(int port);
 void close_socket(int sock);
 
@@ -78,6 +81,12 @@ int main() {
 	main_thread_running = false;
 	pthread_join(main_thread, NULL);
 	return 0;
+}
+
+void initialize_mutexes(){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		pthread_mutex_init(&(all_mutexes[i]), NULL);
+	}
 }
 
 int create_socket(int port){
@@ -117,7 +126,7 @@ struct information* receive_single_information(int *sock){
 	bzero(buff, RECEIVER_BUFFER_SIZE);
 	int available;
 	int nread=read(*sock, buff, RECEIVER_BUFFER_SIZE); //Debug to check if it doesn't wait forever
-	if (nread == 0){
+	if (nread <=0){
 		return NULL; //Didn't receive any information
 	}
 	struct information* returning = (struct information*)malloc(sizeof(struct information));
@@ -125,6 +134,7 @@ struct information* receive_single_information(int *sock){
 		printf("Error allocating memory receiving information\n");
 	}
 	struct information* received = (struct information*) buff;
+	printf("##DEBUG Received information size %d action=%c type_of = %c\n", nread, received->action, received->type_of);
 	memcpy(returning, received, sizeof(struct information*));
 	return returning;
 }
@@ -200,7 +210,7 @@ void* connection_handler(void* arg){
 	int temp_socket;
 	int current_player_id;
 	struct sockaddr_in temp_information;
-	printf("Server started listening on port %d\n", PORT);
+	printf("Server started listening on port %d\nInput q to stop it!\n", PORT);
 	struct timeval tv;
 	tv.tv_sec = 0;
     tv.tv_usec = CLIENT_MOVE_WAIT;
@@ -222,9 +232,9 @@ void* connection_handler(void* arg){
 			close_socket(temp_socket);
 			continue;
 		}
-
 		//MAIN SEMAPHORE WAIT
-		//increment_players_count(&players_count);
+		pthread_mutex_lock(&(all_mutexes[current_player_id]));
+		increment_players_count(&players_count);
 		configuration_update_values(configuration_to_send, current_player_id, players_count);
 
 		//Send configuration to the new client
@@ -234,6 +244,7 @@ void* connection_handler(void* arg){
 		csockets[current_player_id] = (int*)malloc(sizeof(int));
 		if (csockets[current_player_id] == NULL){
 			printf("Error allocating memory!\n");
+			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
 			return NULL;
 		}
 		*csockets[current_player_id] = temp_socket;
@@ -242,21 +253,24 @@ void* connection_handler(void* arg){
 		clients[current_player_id] = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
 		if (clients[current_player_id] == NULL){
 			printf("Error allocating memory!\n");
+			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
 			return NULL;
 		}
 
 		tanks_in_game[current_player_id] = (struct tank*)malloc(sizeof(struct tank));
 		if (tanks_in_game[current_player_id] == NULL){
 			printf("Error allocating memory!\n");
+			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
 			return NULL;
 		}
 		
 		//sizeof(*) or sizeof()????? memcpy because accept takes pointer, so deepcopy required
 		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
+		pthread_mutex_unlock(&(all_mutexes[current_player_id]));
 		//MAIN SEMAPHORE POST
 	}
 	//Disconnect all clients here!!! Remember to comment detach in main
-	pthread_join(receiver_thread, NULL);
+	//pthread_join(receiver_thread, NULL);
 	pthread_join(sender_thread, NULL);
 
 	free(player_ids);
@@ -292,13 +306,15 @@ void* receiver(void* arg){
 		for (int i=0;i<MAX_PLAYERS;i++){
 			if (my_configuration->player_ids[i] == USED_ID){
 				//Check connection alive. If not free the memory.
-				// if (){
-				// 	clean_up_after_disconnect(my_configuration->csockets[i], my_configuration->clients[i], my_configuration->tanks_in_game[i], i, my_configuration->player_ids);
+				//  if (){
+				//  	clean_up_after_disconnect(my_configuration->csockets[i], my_configuration->clients[i], my_configuration->tanks_in_game[i], i, my_configuration->player_ids);
 				// }
 
 				//Receive information. If the function returned NULL -> allocation error or no information to be received.
+				pthread_mutex_lock(&(all_mutexes[i]));
 				struct information* received = receive_single_information(my_configuration->csockets[i]);
 				if (received == NULL){ //No information has been received
+					pthread_mutex_unlock(&(all_mutexes[i]));
 					continue;
 				}
 				if (received->action == CREATE){
@@ -322,12 +338,15 @@ void* receiver(void* arg){
 				}
 				else if (received->action == DISCONNECT){
 					clean_up_after_disconnect(my_configuration->csockets[i], my_configuration->clients[i], my_configuration->tanks_in_game[i], i, my_configuration->player_ids);
+					decrement_players_count(my_configuration->players_count);
+					printf("Player %d disconnected!\n", i);
 					//Send to other players that the player has disconnected!
 				}
 				else{
-					printf("Received wrong command!\n");
+					printf("Received wrong command!:%c\n", received->action);
 				}
 				free(received);
+				pthread_mutex_unlock(&(all_mutexes[i]));
 			}
 		}
 	}
@@ -337,7 +356,7 @@ void* receiver(void* arg){
 
 /*
 TO DO's:
-a) notify server that the client disconnected,
-c) implement sender and receiver,
-d) implement semaphores for critical sections,
+a) check if client is still alive,
+b) improve receiver,
+c) implement sender, - check if update happened?
 */

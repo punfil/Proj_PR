@@ -22,16 +22,19 @@ shield_bar_empty_color = "#cccccc"
 
 # Networking variables
 game_port = 2137
-default_game_server_ip = "192.168.188.183"
+default_game_server_ip = "192.168.0.21"
 information_update = 'u'
 information_create = 'c'
 information_disconnect = 'd'
 information_tank = 't'
 information_projectile = 'p'
 information_turret = 'r'
+projectile_exists = 1
+projectile_not_exists = 0
 receiver_sleep_time = 0.1
 configuration_receive_timeout = 1
 configuration_receive_error = -1
+socket_timeout = 100.00
 
 spawn_point_rotation_angle = 22.5
 default_map_editor_tile = "./resources/grass.json"

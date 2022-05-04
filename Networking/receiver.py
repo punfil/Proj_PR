@@ -34,7 +34,7 @@ class Receiver:
                 payload_in = PayloadConfiguration.from_buffer_copy(buff)
                 return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
             time.sleep(constants.configuration_receive_timeout)
-        return constants.configuration_receive_error, 0, 0, 0, 0, 0, 0
+        return constants.configuration_receive_error, 0, 0, 0, 0, 0, 0, 0
 
     # Prints should be replaced with serious actions
     def process_received_information(self, received_information: PayloadInformation):

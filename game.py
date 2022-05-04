@@ -43,20 +43,21 @@ class Game:
     def setup(self):
         """initializes all variables, loads data from server"""
 
-        # self._connection = Connection()
-        # if not self._connection.establish_connection():
-        #     return False
-        # Change below
-        # self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_single_configuration()
-        # if self._width == 0:
-        #     return False
-        # Is the player count needed? I don't think so
+        self._connection = Connection(self)
+        if not self._connection.establish_connection():
+            return False
+        self._width, self._height, self._background_scale, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection._receiver.receive_configuration()
+        if self._width == constants.configuration_receive_error:
+            print("INFO: Error connecting to server. Please try again later. Bye!")
+            return False
+        self._connection.player_id = self._my_player_id
+        self._connection.initialize_receiver()
 
-        self._width = constants.window_width  # Those values need to be downloaded from socket
-        self._height = constants.window_height
-        self._background_scale = constants.background_scale
-        self._player_count = 4
-        self._my_player_id = 3
+        # self._width = constants.window_width  # Those values need to be downloaded from socket
+        # self._height = constants.window_height
+        # self._background_scale = constants.background_scale
+        # self._player_count = 4
+        # self._my_player_id = 3
 
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
 
@@ -162,7 +163,7 @@ class Game:
             self._turrets_sprites_group.update(delta_time)
             self._projectiles_sprites_group.update(delta_time)
             self._hp_bars_sprites_group.update()
-            # Important - send the server the information that the position changed!
+            # Important - send the server the information that the position wants to change!
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)

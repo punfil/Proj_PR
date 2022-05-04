@@ -88,3 +88,11 @@ class Turret(pygame.sprite.Sprite):
 
                 self._projectile_offset_index += 1
                 self._projectile_offset_index %= len(self._projectile_offsets)
+
+    @property
+    def angle(self):
+        return self._angle
+
+    @angle.setter
+    def angle(self, value):
+        self._angle = value

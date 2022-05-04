@@ -42,7 +42,6 @@ class Game:
 
     def setup(self):
         """initializes all variables, loads data from server"""
-
         self._connection = Connection(self)
         if not self._connection.establish_connection():
             return False
@@ -141,13 +140,20 @@ class Game:
         """removes hp bar from the hp bars sprite group"""
         hp_bar.kill()
 
+    def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle):
+        # self._tanks[player_id].update_from_server(x_location, y_location, tank_angle, hp, turret_angle)
+        self._my_tank.update_from_server(x_location, y_location, tank_angle, hp, turret_angle)
+
+    def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
+        self._connection.send_want_to_change_tank_or_turret(x_location, y_location, tank_angle, hp, turret_angle)
+
     def play(self):
         """runs the game"""
 
         self._background_board.draw(self._screen, draw_all=True)
 
         while True:
-            delta_time = self._clock.tick(60) / 1000  # number of seconds passed since the last frame
+            delta_time = self._clock.tick(30) / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
@@ -163,7 +169,6 @@ class Game:
             self._turrets_sprites_group.update(delta_time)
             self._projectiles_sprites_group.update(delta_time)
             self._hp_bars_sprites_group.update()
-            # Important - send the server the information that the position wants to change!
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)
@@ -176,3 +181,11 @@ class Game:
             self._hp_bars_sprites_group.draw(self._screen)
 
             pygame.display.flip()
+
+    @property
+    def my_player_id(self):
+        return self._my_player_id
+
+    @my_player_id.setter
+    def my_player_id(self, player_id):
+        self._my_player_id = player_id

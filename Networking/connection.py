@@ -52,7 +52,7 @@ class Connection:
                                      x_location, y_location, tank_angle, constants.projectile_exists, 0.0)
 
     def send_single_information(self, action, type_of, player_id, x_location, y_location, tank_angle, hp, turret_angle):
-        payload_out = PayloadInformation(action.encode(), type_of.encode(), player_id, x_location, y_location, tank_angle, hp,
+        payload_out = PayloadInformation(action.encode('utf-8'), type_of.encode('utf-8'), player_id, int(x_location), int(y_location), tank_angle, hp,
                                          turret_angle)
         nsent = self._socket.send(payload_out)
         if nsent:

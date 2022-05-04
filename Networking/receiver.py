@@ -18,6 +18,10 @@ class Receiver:
             r, _, _ = select.select([self._socket], [], [], 0)
             if r:
                 buff = self._socket.recv(sizeof(PayloadInformation))
+                print(f"Receiving {len(buff)} informations!")
+                if len(buff) < 28:  # DEBUG REQUIRED WHY THIS HAPPENS
+                    print("##DEBUG Error - received less bytes than expected!")
+                    continue
                 payload_in: PayloadInformation = PayloadInformation.from_buffer_copy(buff)
                 self.process_received_information(payload_in)
             else:
@@ -39,14 +43,17 @@ class Receiver:
     # Prints should be replaced with serious actions
     def process_received_information(self, received_information: PayloadInformation):
         # When searching for an item if not found we can just simply add such one!
-        if received_information.action == constants.information_update or \
-                received_information.action == constants.information_create:
-
-            if received_information.type_of == constants.information_tank:
+        if received_information.action.decode('utf-8') == constants.information_update or \
+                received_information.action.decode('utf-8') == constants.information_create:
+            if received_information.type_of.decode('utf-8') == constants.information_tank:
+                self._game.update_tank(received_information.player_id, received_information.x_location, received_information.y_location,
+                                       received_information.tank_angle, received_information.hp, received_information.turret_angle)
                 print("Update somebody's tank")
-            elif received_information.type_of == constants.information_projectile:
+            elif received_information.type_of.decode('utf-8') == constants.information_projectile:
                 print("Update somebody's projectile")
-            elif received_information.type_of == constants.information_turret:
+            elif received_information.type_of.decode('utf-8') == constants.information_turret:
                 print("Update somebody's turret")
             else:
                 print("Received command to update. The target was inappropriate!")
+        else:
+            print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")

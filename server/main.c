@@ -53,7 +53,7 @@ void initialize_mutexes();
 int create_socket(int port);
 void close_socket(int sock);
 
-bool send_payload(int sock, void* msg, uint32_t msgsize);
+int send_payload(int sock, void* msg, uint32_t msgsize);
 struct information* receive_single_information(int* sock);
 
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
@@ -113,11 +113,9 @@ void close_socket(int sock){
 	close(sock);
 }
 
-bool send_payload(int sock, void* msg, uint32_t msgsize){
-	if(write(sock, msg, msgsize)<0){ //write returns number of bytes sent
-		return false;
-	}
-	return true;
+int send_payload(int sock, void* msg, uint32_t msgsize){
+	int nwrite = write(sock, msg, msgsize);
+	return nwrite;
 }
 
 //Remember to use free!!!!!
@@ -288,15 +286,32 @@ void* connection_handler(void* arg){
 
 void* sender(void* arg){
 	struct for_thread* my_configuration = (struct for_thread*) arg;
+	struct information* information = (struct information*)malloc(sizeof(struct information));
+	int nwrite = 0;
+	if (information==NULL){
+		printf("Error allocating memory in sender!\n");
+		return NULL;
+	}
 	while (my_configuration->running){
 		for (int i=0;i<MAX_PLAYERS;i++){
 			if (my_configuration->player_ids[i] == USED_ID){
-				//printf("Hello sender!");
-				///Do something
+				pthread_mutex_lock(&(all_mutexes[i]));
+				information->action = UPDATE;
+				information->player_id = i;
+				information->type_of = TANK;
+				information->x_location = my_configuration->tanks_in_game[i]->x;
+				information->y_location = my_configuration->tanks_in_game[i]->y;
+				information->tank_angle = my_configuration->tanks_in_game[i]->tank_angle;
+				information->hp = my_configuration->tanks_in_game[i]->hp;
+				information->turret_angle = my_configuration->tanks_in_game[i]->turret_angle;
+				nwrite = send_payload(*(my_configuration->csockets[i]), (void*)information, sizeof(struct information));
+				printf("##DEBUG Sent information size %d bytes to player %d action=%c type_of=%c\n", nwrite, i, information->action, information->type_of);
+				pthread_mutex_unlock(&(all_mutexes[i]));
 			}
 		}
 	}
 	printf("Exiting sender\n");
+	free(information);
 	return NULL;
 }
 

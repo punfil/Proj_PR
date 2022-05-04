@@ -77,7 +77,7 @@ class Tank(pygame.sprite.Sprite):
         """controls the tank, based on pressed keys"""
 
         if not self.keys:
-            return
+            return False
 
         # forward/backward movement
         velocity_changed = False
@@ -118,7 +118,25 @@ class Tank(pygame.sprite.Sprite):
         if self.keys[pygame.K_s]:
             self.activate_shield()
 
+        return True
+
+    def save_my_data(self):
+        return self._x, self._y, self._angle, self._hp, self._turret.angle
+
+    def update_from_server(self, x_location, y_location, tank_angle, hp, turret_angle):
+        self._x = x_location
+        self._y = y_location
+        self._angle = tank_angle
+        self._hp = hp
+        self._turret._angle = turret_angle
+
     def update(self, delta_time):
+        # Temp methods for saving data
+        change = False
+        x, y, angle, hp, turret_angle = None, None, None, None, None
+        if self._player_no == self._game.my_player_id:
+            x, y, angle, hp, turret_angle = self.save_my_data()
+
         self._collision_cooldown -= delta_time
 
         if self._shield_active:
@@ -126,9 +144,11 @@ class Tank(pygame.sprite.Sprite):
         else:
             self._shield_current_cooldown -= delta_time
 
-        self.handle_keyboard(delta_time)
+        if self.handle_keyboard(delta_time):
+            change = True
 
         if self._velocity.magnitude_squared() != 0:
+            change = True
             velocity_magnitude = self._velocity.magnitude()
             angle_vector = pygame.math.Vector2(-sin(self._angle * (pi / 180)),
                                                -cos(self._angle * (pi / 180)))
@@ -182,6 +202,10 @@ class Tank(pygame.sprite.Sprite):
             if self._shield_active:
                 self._shield.rect.center = self.rect.center
 
+        if change is True and self._player_no == self._game.my_player_id:
+            self._game.send_tank_position(self._x, self._y, self._angle, self._hp, self._turret.angle)
+            self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
+
     def accelerate(self, acceleration):
         """applies acceleration in the direction the tank is facing"""
 
@@ -193,7 +217,7 @@ class Tank(pygame.sprite.Sprite):
 
         max_speed_with_multiplier = self._max_speed * self._max_speed_multiplier
 
-        if self._velocity.magnitude_squared() > max_speed_with_multiplier*max_speed_with_multiplier:
+        if self._velocity.magnitude_squared() > max_speed_with_multiplier * max_speed_with_multiplier:
             self._velocity = self._velocity.normalize() * max_speed_with_multiplier
 
     def apply_drag(self, drag):
@@ -262,7 +286,7 @@ class Tank(pygame.sprite.Sprite):
         """checks if the tank can move to position (x, y+value)"""
         if self._y + value < 0 or self._y + value > constants.window_height:
             return False
-        if self._game.get_tile_at_screen_position(self._x, self._y+value).get_attribute("blocks_movement"):
+        if self._game.get_tile_at_screen_position(self._x, self._y + value).get_attribute("blocks_movement"):
             return False
         return True
 
@@ -270,7 +294,7 @@ class Tank(pygame.sprite.Sprite):
         """checks if the tank can move to position (x+value, y)"""
         if self._x + value < 0 or self._x + value > constants.window_width:
             return False
-        if self._game.get_tile_at_screen_position(self._x+value, self._y).get_attribute("blocks_movement"):
+        if self._game.get_tile_at_screen_position(self._x + value, self._y).get_attribute("blocks_movement"):
             return False
         return True
 

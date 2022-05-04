@@ -18,3 +18,4 @@ Networking/__pycache__/*
 server/.vscode/settings.json
 server/.vscode/c_cpp_properties.json
 server/main
+server/bioz/*

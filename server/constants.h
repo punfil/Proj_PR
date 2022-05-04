@@ -25,7 +25,7 @@
 #define PROJECTILE_NOT_EXISTS 0
 
 //Constants for receiver
-#define RECEIVER_BUFFER_SIZE 512
+#define RECEIVER_BUFFER_SIZE 28
 #define CLIENT_MOVE_WAIT 5
 
 

@@ -23,8 +23,8 @@
 
 #define PROJECTILE_EXISTS 1
 #define PROJECTILE_NOT_EXISTS 0
+#define NEW_CLIENT_WAIT_TIME_SEC 5 //Set this to turn off the server using q
 
-//Constants for receiver
 #define RECEIVER_BUFFER_SIZE 28
 #define CLIENT_MOVE_WAIT 5
 

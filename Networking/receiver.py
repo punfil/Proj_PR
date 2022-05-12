@@ -48,7 +48,7 @@ class Receiver:
             if received_information.type_of.decode('utf-8') == constants.information_tank:
                 self._game.update_tank(received_information.player_id, received_information.x_location, received_information.y_location,
                                        received_information.tank_angle, received_information.hp, received_information.turret_angle)
-                print("Update somebody's tank")
+                print(f"Update somebody's tank to position {received_information.x_location}, {received_information.y_location}")
             elif received_information.type_of.decode('utf-8') == constants.information_projectile:
                 print("Update somebody's projectile")
             elif received_information.type_of.decode('utf-8') == constants.information_turret:

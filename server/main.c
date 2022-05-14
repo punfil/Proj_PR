@@ -58,6 +58,7 @@ struct singly_linked_node* global_receivings[MAX_PLAYERS];
 struct singly_linked_node* global_sendings[MAX_PLAYERS];
 
 void initialize_mutexes();
+void destroy_mutexes();
 
 int create_socket(int port);
 void close_socket(int sock);
@@ -102,6 +103,14 @@ void initialize_mutexes(){
 		pthread_mutex_init(&(all_mutexes[i]), NULL);
 	}
 	pthread_mutex_init(&players_count_mutex, NULL);
+}
+
+//Destroy the mutexes and free the resources
+void destroy_mutexes(){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		pthread_mutex_destroy(&(all_mutexes[i]));
+	}
+	pthread_mutex_destroy(&players_count_mutex);
 }
 
 //Creates the socket

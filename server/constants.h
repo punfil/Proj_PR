@@ -16,6 +16,14 @@
 #define NOOWNER -1 //For projectiles - they need information who is owner. Tanks don't.
 #define PROJECTILE_HP_ALIVE 1
 
+#define DEFAULT_TANK_SKIN 0
+#define TANK_SPAWN_POINT_X 400
+#define TANK_SPAWN_POINT_Y 400
+#define FULL_HP 100.00
+#define NO_ROTATION 0.00
+
+#define DEFAULT_MAP_NUMBER 0
+
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define BACKGROUND_SCALE 50

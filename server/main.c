@@ -57,6 +57,8 @@ pthread_mutex_t players_count_mutex;
 struct singly_linked_node* global_receivings[MAX_PLAYERS];
 struct singly_linked_node* global_sendings[MAX_PLAYERS];
 
+void initialize_global_arrays();
+
 void initialize_mutexes();
 void destroy_mutexes();
 
@@ -95,6 +97,13 @@ int main() {
 	main_thread_running = false;
 	pthread_join(main_thread, NULL);
 	return 0;
+}
+
+void initialize_global_arrays(){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		global_receivings[i] = NULL;
+		global_sendings[i] = NULL;
+	}
 }
 
 //Initializes all mutexes to NULL
@@ -329,6 +338,16 @@ void* sender(int* csock, struct tank* tank, struct singly_linked_node* projectil
 	int nwrite = 0;
 
 	//Check if there are any global updates - global_sendings
+	struct singly_linked_node* iterator = global_sendings[tank->player_id];
+	global_sendings[tank->player_id] = NULL;
+	struct singly_linked_node* free_helper = NULL;
+	while (iterator != NULL){
+		nwrite = send_payload(*csock, (void *)iterator->data, sizeof(struct information*));
+		free_helper = iterator;
+		iterator = iterator->next;
+		information_free((struct information*)free_helper->data);
+		free(free_helper);
+	}
 
 	//Send tank
 	information_set_values(information, UPDATE, TANK, tank->player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
@@ -353,12 +372,15 @@ struct singly_linked_node* receiver(int* csock){
 	return received_informations;
 }			
 
+//Communicates with particular player
 void* player_connection_handler(void* arg){
 	struct for_thread* my_configuration = (struct for_thread*) arg;
 	
 	//Send configuration to the new client
 	struct configuration* configuration_to_send = configuration_alloc();
-	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, 400, 400, 0);
+	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_MAP_NUMBER);
+
+	tank_set_values(my_configuration->tank, my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, NO_ROTATION, FULL_HP, NO_ROTATION, DEFAULT_TANK_SKIN);
 
 	send_payload(*(my_configuration->csocket), configuration_to_send, sizeof(struct configuration));
 	printf("New client connected from %s\n", inet_ntoa(my_configuration->client->sin_addr));
@@ -379,11 +401,57 @@ void* player_connection_handler(void* arg){
 	return 0;
 }
 
+//Checks the worlds' physics
 void* calculate_physics(void* arg){
 	printf("Here I will be calculating physics. For now I am only rewriting what I've got :)\n");
 	struct whole_world* my_configuration = (struct whole_world*)arg;
 	while (*my_configuration->running == true){
-
+		for (int i=0;i<MAX_PLAYERS;i++){
+			if (my_configuration->player_ids[i] == USED_ID && pthread_mutex_trylock(&(all_mutexes[i])) == 0){
+				struct singly_linked_node* iterator = global_receivings[i];
+				struct singly_linked_node* free_help = NULL;
+				global_receivings[i] = NULL;
+				while (iterator!=NULL){
+					struct information* data = (struct information*)(iterator->data);
+					//Create
+					if (data->action == CREATE){
+						if (data->type_of == TANK){
+							//Create tank
+						}
+						else if(data->type_of == PROJECTILE){
+							//Create projectile
+						}
+						else{
+							printf("###ERROR: Unknown target of command!\n");
+						}
+					}
+					else if (data->action == UPDATE){
+						if (data->type_of == TANK){
+							//Update tank
+							tank_set_values(my_configuration->tanks[i], data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
+						}
+						else if (data->type_of == PROJECTILE){
+							//Update projectile - projectile ID required?
+						}
+						else{
+							printf("###ERROR: Unknown target of command!\n");
+						}
+					}
+					else if (data->action == DISCONNECT){
+						//Do something
+					}
+					else{
+						printf("###ERROR: Unknown command received!\n");
+					}
+					free_help = iterator;
+					iterator = iterator->next;
+					information_free(free_help->data);
+					free(free_help);
+				}
+				//Other calculations?
+				pthread_mutex_unlock(&(all_mutexes[i]));
+			}
+		}
 	}
 	printf("Exiting the physics calculator thread!\n");
 	return NULL;

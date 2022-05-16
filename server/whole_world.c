@@ -14,7 +14,6 @@
 struct whole_world* whole_world_alloc(){
     struct whole_world* self;
     self = (struct whole_world*)malloc(sizeof(struct whole_world));
-    self->running = (bool*)malloc(sizeof(bool));
     if (self == NULL){
         return NULL;
     }
@@ -26,10 +25,8 @@ void whole_world_set_values(struct whole_world* self, int* players_ids, struct t
     self->player_ids = players_ids;
     self->tanks = tanks;
     self->projectiles = projectiles_in_game;
-    *self->running = true;
 }
 
 void whole_world_free(struct whole_world* self){
-    free(self->running);
     free(self);
 }

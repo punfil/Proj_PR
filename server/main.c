@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 //Multithreading
 #include <pthread.h>
@@ -13,6 +14,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/tcp.h>
 
 
 #ifndef TANK_H
@@ -73,10 +75,10 @@ void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct 
 void* connection_handler(void* arg);
 void* player_connection_handler(void* arg);
 
-void* sender(int* csock, struct tank* tank, struct singly_linked_node* projectiles);
+void sender(int* csock, struct tank* tank, struct singly_linked_node* projectiles);
 struct singly_linked_node* receiver(int* csock);
 
-void* calculate_physics(void* arg);
+void calculate_physics(struct whole_world* my_configuration, int player_id);
 
 // Starts the thread that accepts clients and allows to kill the server
 int main() {
@@ -172,8 +174,8 @@ struct information* receive_single_information(int *sock){
 		printf("Error allocating memory receiving information\n");
 	}
 	struct information* received = (struct information*) buff;
-	printf("##DEBUG Received information size %d action=%c type_of = %c\n", nread, received->action, received->type_of);
-	memcpy(returning, received, sizeof(struct information*));
+	memcpy(returning, received, sizeof(struct information));
+	//information_set_values(returning, received->action, received->type_of, received->player_id, received->x_location, received->y_location, received->tank_angle, received->hp, received->turret_angle);
 	return returning;
 }
 
@@ -230,11 +232,8 @@ void* connection_handler(void* arg){
 
 	pthread_t clients_threads[MAX_PLAYERS];
 
-	pthread_t physics_calculator_thread;
 	struct whole_world* world = whole_world_alloc();
 	whole_world_set_values(world, player_ids, tanks_in_game, projectiles_in_game);
-	int result = pthread_create(&physics_calculator_thread, NULL, calculate_physics, (void*)world);
-	//check if it was succesful
 
 	int customer_size = sizeof(struct sockaddr_in);
 	int main_socket = create_socket(PORT);
@@ -246,6 +245,7 @@ void* connection_handler(void* arg){
 	struct timeval tv;
 	tv.tv_sec = 0;
     tv.tv_usec = CLIENT_MOVE_WAIT;
+	int one = 1;
 	while (*running){
 		temp_socket = accept(main_socket, (struct sockaddr*) &temp_information, &customer_size);
 
@@ -275,6 +275,7 @@ void* connection_handler(void* arg){
 			return NULL;
 		}
 		*csockets[current_player_id] = temp_socket;
+		setsockopt(*(csockets[current_player_id]), SOL_TCP, TCP_NODELAY, &one, sizeof(one));
 		setsockopt(*(csockets[current_player_id]), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
 
 		clients[current_player_id] = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
@@ -295,7 +296,7 @@ void* connection_handler(void* arg){
 		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
 
 		pthread_mutex_unlock(&(all_mutexes[current_player_id]));
-		for_thread_set_values(for_threads[current_player_id], current_player_id, tanks_in_game[current_player_id], projectiles_in_game, csockets[current_player_id], clients[current_player_id], &players_count);
+		for_thread_set_values(for_threads[current_player_id], current_player_id, tanks_in_game[current_player_id], projectiles_in_game, csockets[current_player_id], clients[current_player_id], &players_count, world);
 		
 		//Create new thread to serve this client
 		int result = pthread_create(&clients_threads[current_player_id], NULL, player_connection_handler, (void*)for_threads[current_player_id]);
@@ -303,8 +304,6 @@ void* connection_handler(void* arg){
 	}
 	printf("Exiting the connection handler thread!\n");
 
-	*world->running = false;
-	pthread_join(physics_calculator_thread, NULL);
 	whole_world_free(world);
 	//Destroying clients
 	for (int i=0;i<MAX_PLAYERS;i++){
@@ -329,11 +328,11 @@ void* connection_handler(void* arg){
 }
 
 //Sends information about everything :)
-void* sender(int* csock, struct tank* tank, struct singly_linked_node* projectiles){
-	struct information* information = (struct information*)malloc(sizeof(struct information));
+void sender(int* csock, struct tank* tank, struct singly_linked_node* projectiles){
+	struct information* information = information_alloc();
  	if (information==NULL){
  		printf("Error allocating memory in sender!\n");
- 		return NULL;
+ 		return;
  	}
 	int nwrite = 0;
 
@@ -342,7 +341,7 @@ void* sender(int* csock, struct tank* tank, struct singly_linked_node* projectil
 	global_sendings[tank->player_id] = NULL;
 	struct singly_linked_node* free_helper = NULL;
 	while (iterator != NULL){
-		nwrite = send_payload(*csock, (void *)iterator->data, sizeof(struct information*));
+		nwrite = send_payload(*csock, (void *)iterator->data, sizeof(struct information));
 		free_helper = iterator;
 		iterator = iterator->next;
 		information_free((struct information*)free_helper->data);
@@ -351,10 +350,10 @@ void* sender(int* csock, struct tank* tank, struct singly_linked_node* projectil
 
 	//Send tank
 	information_set_values(information, UPDATE, TANK, tank->player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
-	nwrite = send_payload(*csock, information, sizeof(struct information*));
+	nwrite = send_payload(*csock, information, sizeof(struct information));
 	//Send projectiles
 	//in range len(projectiles)
-	return NULL;
+	return;
 }
 
 //Returns a list of informations received
@@ -366,7 +365,9 @@ struct singly_linked_node* receiver(int* csock){
 		struct information* received = receive_single_information(csock);
 		if (received == NULL){ //No information has been received
 			finished = true;
+			break;
 		}
+		printf("##DEBUG: Received to move to (%d, %d)\n", received->x_location, received->y_location);
 		singly_linked_list_add(&received_informations, received);
 	}
 	return received_informations;
@@ -389,72 +390,73 @@ void* player_connection_handler(void* arg){
 	
 	struct singly_linked_node* received_informations;
 
+	float time_start;
+	float sleep_time_minus;
+	float sleep_time;
 	while (*(my_configuration->running)){
 		//Receive the information available
 		//Remember to clean every information + list element
-		pthread_mutex_lock(&all_mutexes[my_configuration->player_id]);
+		//pthread_mutex_lock(&all_mutexes[my_configuration->player_id]);
+		time_start = (float)time(NULL);
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
+		printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);
+		calculate_physics(my_configuration->whole_world, my_configuration->player_id);
+		printf("##INFO: Finished calculating physics for player %d\n", my_configuration->player_id);
 		sender(my_configuration->csocket, my_configuration->tank, my_configuration->projectiles);
-		pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
+		printf("##INFO: Finished sending information to player: %d\n", my_configuration->player_id);
+		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
+		sleep_time_minus = time_start-(float)time(NULL);
+		sleep_time = 1/COMMUNICATION_INTERVAL - sleep_time_minus;
+		printf("My sleep time is: %f\n", sleep_time);
+		sleep(sleep_time);
 	}
 	printf("Exiting the %d player connection handler thread!\n", my_configuration->player_id);
 	return 0;
 }
 
 //Checks the worlds' physics
-void* calculate_physics(void* arg){
-	printf("Here I will be calculating physics. For now I am only rewriting what I've got :)\n");
-	struct whole_world* my_configuration = (struct whole_world*)arg;
-	while (*my_configuration->running == true){
-		for (int i=0;i<MAX_PLAYERS;i++){
-			if (my_configuration->player_ids[i] == USED_ID && pthread_mutex_trylock(&(all_mutexes[i])) == 0){
-				struct singly_linked_node* iterator = global_receivings[i];
-				struct singly_linked_node* free_help = NULL;
-				global_receivings[i] = NULL;
-				while (iterator!=NULL){
-					struct information* data = (struct information*)(iterator->data);
-					//Create
-					if (data->action == CREATE){
-						if (data->type_of == TANK){
-							//Create tank
-						}
-						else if(data->type_of == PROJECTILE){
-							//Create projectile
-						}
-						else{
-							printf("###ERROR: Unknown target of command!\n");
-						}
-					}
-					else if (data->action == UPDATE){
-						if (data->type_of == TANK){
-							//Update tank
-							tank_set_values(my_configuration->tanks[i], data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
-						}
-						else if (data->type_of == PROJECTILE){
-							//Update projectile - projectile ID required?
-						}
-						else{
-							printf("###ERROR: Unknown target of command!\n");
-						}
-					}
-					else if (data->action == DISCONNECT){
-						//Do something
-					}
-					else{
-						printf("###ERROR: Unknown command received!\n");
-					}
-					free_help = iterator;
-					iterator = iterator->next;
-					information_free(free_help->data);
-					free(free_help);
-				}
-				//Other calculations?
-				pthread_mutex_unlock(&(all_mutexes[i]));
+void calculate_physics(struct whole_world* my_configuration, int player_id){
+	struct singly_linked_node* iterator = global_receivings[player_id];
+	struct singly_linked_node* free_help = NULL;
+	global_receivings[player_id] = NULL;
+	while (iterator!=NULL){
+		struct information* data = (struct information*)(iterator->data);
+		//Create
+		if (data->action == CREATE){
+			if (data->type_of == TANK){
+				//Create tank
+			}
+			else if(data->type_of == PROJECTILE){
+				//Create projectile
+			}
+			else{
+				printf("###ERROR: Unknown target of command!\n");
 			}
 		}
+		else if (data->action == UPDATE){
+			if (data->type_of == TANK){
+				//Update tank
+				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location+1, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
+			}
+			else if (data->type_of == PROJECTILE){
+				//Update projectile - projectile ID required?
+			}
+			else{
+				printf("###ERROR: Unknown target of command!\n");
+			}
+		}	
+		else if (data->action == DISCONNECT){
+			//Do something
+		}
+		else{
+			printf("###ERROR: Unknown command received!\n");
+		}
+		free_help = iterator;
+		iterator = iterator->next;
+		information_free(free_help->data);
+		free(free_help);
 	}
-	printf("Exiting the physics calculator thread!\n");
-	return NULL;
+	//Other calculations?
 }
 /*
 TO DO's:

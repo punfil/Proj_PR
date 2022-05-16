@@ -16,7 +16,6 @@ struct whole_world {
 	int* player_ids;
     struct tank** tanks;
     struct singly_linked_node* projectiles;
-    bool* running;
 };
 
 struct whole_world* whole_world_alloc();

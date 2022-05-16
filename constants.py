@@ -31,10 +31,11 @@ information_projectile = 'p'
 information_turret = 'r'
 projectile_exists = 1
 projectile_not_exists = 0
-receiver_sleep_time = 0.1
+receiver_sleep_time = 0.001
 configuration_receive_timeout = 1
 configuration_receive_error = -1
 socket_timeout = 100.00
+main_loop_per_second = 30
 
 spawn_point_rotation_angle = 22.5
 default_map_editor_tile = "./resources/grass.json"

@@ -1,4 +1,3 @@
-from tile import Tile
 from Boards.background_board import BackgroundBoard
 from Networking.connection import Connection
 from tank import Tank
@@ -7,6 +6,7 @@ import sys
 import constants
 import json
 import threading
+import time
 
 
 class Game:
@@ -50,17 +50,10 @@ class Game:
             print("INFO: Error connecting to server. Please try again later. Bye!")
             return False
         self._connection.player_id = self._my_player_id
-        self._connection.initialize_receiver()
-
-        # self._width = constants.window_width  # Those values need to be downloaded from socket
-        # self._height = constants.window_height
-        # self._background_scale = constants.background_scale
-        # self._player_count = 4
-        # self._my_player_id = 3
 
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
 
-        # TODO Map number - variable "map_no
+        # TODO Map number - variable "map_no - done :)
         self.load_map("save.json")
 
         pygame.init()
@@ -83,7 +76,7 @@ class Game:
         self._tanks = []
         for i in range(self._player_count):
             spawn_point = self._spawn_points[i % len(self._spawn_points)]
-            tank = Tank(i, self, spawn_point[0], spawn_point[1], spawn_point[2],
+            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, 0.0, # Default angle
                         self.load_resource("resources/tank.json"))
             self._tanks_sprites_group.add(tank)
             self._turrets_sprites_group.add(tank.turret)
@@ -91,6 +84,9 @@ class Game:
             self._tanks.append(tank)
             if i == self._my_player_id:
                 self._my_tank = tank
+
+        self._connection.initialize_receiver()
+
         return True
 
     def load_map(self, filename):
@@ -153,7 +149,8 @@ class Game:
         self._background_board.draw(self._screen, draw_all=True)
 
         while True:
-            delta_time = self._clock.tick(30) / 1000  # number of seconds passed since the last frame
+            start = time.time()
+            delta_time = self._clock.tick(constants.main_loop_per_second) / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
@@ -181,6 +178,9 @@ class Game:
             self._hp_bars_sprites_group.draw(self._screen)
 
             pygame.display.flip()
+
+            end = time.time()
+            time.sleep(1/constants.main_loop_per_second - (start-end))
 
     @property
     def my_player_id(self):

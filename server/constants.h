@@ -34,6 +34,8 @@
 #define PROJECTILE_NOT_EXISTS 0
 #define NEW_CLIENT_WAIT_TIME_SEC 5 //Set this to turn off the server using q
 
+#define MAX_PROJECTILE_COUNT 20
+
 #define COMMUNICATION_INTERVAL 30.0 //Remeber to change this in every client! MUST BE FLOAT!!!
 
 #define RECEIVER_BUFFER_SIZE 28

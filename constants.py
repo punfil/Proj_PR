@@ -8,6 +8,8 @@ object_collision_damage = 0.5
 object_collision_cooldown = 0.5
 object_collision_speed_multiplier = 0.5
 
+max_projectile_count = 20
+
 hp_bar_width = 50
 hp_bar_height = 5
 hp_bar_y_offset = -25

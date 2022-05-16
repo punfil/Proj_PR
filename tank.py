@@ -204,7 +204,6 @@ class Tank(pygame.sprite.Sprite):
 
         if change is True and self._player_no == self._game.my_player_id:
             self._game.send_tank_position(self._x, self._y, self._angle, self._hp, self._turret.angle)
-            print("Sent tank position!")
             self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
 
     def accelerate(self, acceleration):

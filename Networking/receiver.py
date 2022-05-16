@@ -38,7 +38,7 @@ class Receiver:
                 payload_in = PayloadConfiguration.from_buffer_copy(buff)
                 return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
             time.sleep(constants.configuration_receive_timeout)
-        return constants.configuration_receive_error, 0, 0, 0, 0, 0, 0, 0
+        return constants.configuration_receive_error, constants.configuration_receive_error, constants.configuration_receive_error, constants.configuration_receive_error, 0, 0, 0, 0
 
     # Prints should be replaced with serious actions
     def process_received_information(self, received_information: PayloadInformation):
@@ -48,7 +48,6 @@ class Receiver:
             if received_information.type_of.decode('utf-8') == constants.information_tank:
                 self._game.update_tank(received_information.player_id, received_information.x_location, received_information.y_location,
                                        received_information.tank_angle, received_information.hp, received_information.turret_angle)
-                print(f"Update somebody's tank to position {received_information.x_location}, {received_information.y_location}")
             elif received_information.type_of.decode('utf-8') == constants.information_projectile:
                 print("Update somebody's projectile")
             elif received_information.type_of.decode('utf-8') == constants.information_turret:

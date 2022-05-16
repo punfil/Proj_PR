@@ -44,7 +44,7 @@ class Connection:
         #  Those variables are random, server first checks the disconnect information and closes the connection.
 
     def send_want_to_change_tank_or_turret(self, x_location, y_location, tank_angle, hp, turret_angle):
-        self.send_single_information(constants.information_update, constants.information_turret, self.player_id,
+        self.send_single_information(constants.information_update, constants.information_tank, self.player_id,
                                      x_location, y_location, tank_angle, hp, turret_angle)
 
     def send_want_to_new_projectile(self, x_location, y_location, tank_angle):

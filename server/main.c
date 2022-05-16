@@ -407,8 +407,7 @@ void* player_connection_handler(void* arg){
 		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
 		sleep_time_minus = time_start-(float)time(NULL);
 		sleep_time = 1/COMMUNICATION_INTERVAL - sleep_time_minus;
-		printf("My sleep time is: %f\n", sleep_time);
-		sleep(sleep_time);
+		usleep(sleep_time*1000000); //Seconds to microseconds conversion
 	}
 	printf("Exiting the %d player connection handler thread!\n", my_configuration->player_id);
 	return 0;
@@ -430,19 +429,21 @@ void calculate_physics(struct whole_world* my_configuration, int player_id){
 				//Create projectile
 			}
 			else{
-				printf("###ERROR: Unknown target of command!\n");
+				printf("###ERROR: Unknown target of command CREATE!\n");
 			}
 		}
 		else if (data->action == UPDATE){
 			if (data->type_of == TANK){
 				//Update tank
-				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location+1, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
+				printf("Tank (%d, %d)\n",my_configuration->tanks[player_id]->x, my_configuration->tanks[player_id]->y);
+				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
+				printf("Tank edited (%d, %d)\n",my_configuration->tanks[player_id]->x, my_configuration->tanks[player_id]->y);
 			}
 			else if (data->type_of == PROJECTILE){
 				//Update projectile - projectile ID required?
 			}
 			else{
-				printf("###ERROR: Unknown target of command!\n");
+				printf("###ERROR: Unknown target of command UPDATE!\n");
 			}
 		}	
 		else if (data->action == DISCONNECT){

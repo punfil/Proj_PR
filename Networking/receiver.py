@@ -18,8 +18,7 @@ class Receiver:
             r, _, _ = select.select([self._socket], [], [], 0)
             if r:
                 buff = self._socket.recv(sizeof(PayloadInformation))
-                print(f"Receiving {len(buff)} informations!")
-                if len(buff) < 28:  # DEBUG REQUIRED WHY THIS HAPPENS
+                if len(buff) < 28:
                     print("##DEBUG Error - received less bytes than expected!")
                     continue
                 payload_in: PayloadInformation = PayloadInformation.from_buffer_copy(buff)
@@ -54,5 +53,7 @@ class Receiver:
                 print("Update somebody's turret")
             else:
                 print("Received command to update. The target was inappropriate!")
+        elif received_information.action.decode('utf-8') == constants.information_disconnect:
+            self._game.delete_tank(received_information.player_id)
         else:
             print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")

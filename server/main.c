@@ -70,6 +70,8 @@ void close_socket(int sock);
 int send_payload(int sock, void* msg, uint32_t msgsize);
 struct information* receive_single_information(int* sock);
 
+void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids);
+void send_info_new_player_disconnected(int player_id, struct tank* tank, int* player_ids);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
 void* connection_handler(void* arg);
@@ -101,6 +103,7 @@ int main() {
 	return 0;
 }
 
+//Used to set all the global variables to NULL
 void initialize_global_arrays(){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		global_receivings[i] = NULL;
@@ -177,6 +180,32 @@ struct information* receive_single_information(int *sock){
 	memcpy(returning, received, sizeof(struct information));
 	//information_set_values(returning, received->action, received->type_of, received->player_id, received->x_location, received->y_location, received->tank_angle, received->hp, received->turret_angle);
 	return returning;
+}
+
+//Sends info to all connected players that new player has connected
+void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
+			struct information* sending = information_alloc();
+			information_set_values(sending, CREATE, TANK, player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
+			//Semaphore
+			singly_linked_list_add(&global_sendings[i], sending);
+			//Semaphore
+		}
+	}
+}
+
+//Sends info to all connected players that new player has disconnected
+void send_info_new_player_disconnected(int player_id, struct tank* tank, int* player_ids){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one disconnecting!
+			struct information* sending = information_alloc();
+			information_set_values(sending, DISCONNECT, TANK, player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
+			//Semaphore
+			singly_linked_list_add(&global_sendings[i], sending);
+			//Semaphore
+		}
+	}
 }
 
 //Frees memory when the client disconnects
@@ -301,7 +330,9 @@ void* connection_handler(void* arg){
 		//Create new thread to serve this client
 		int result = pthread_create(&clients_threads[current_player_id], NULL, player_connection_handler, (void*)for_threads[current_player_id]);
 		pthread_detach(clients_threads[current_player_id]); //Automatically free resources when player disconnects
-		// if creating new_thread failed free memory and close connection
+		
+		//Send information to all existing clients that new player as joined
+		send_info_new_player_connected(current_player_id, tanks_in_game[current_player_id], player_ids);
 	}
 	printf("Exiting the connection handler thread!\n");
 

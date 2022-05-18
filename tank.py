@@ -298,6 +298,17 @@ class Tank(pygame.sprite.Sprite):
             return False
         return True
 
+    def update_values_from_server(self, x, y, tank_angle, hp, turret_angle):
+        self._x = x
+        self._y = y
+        self._angle = tank_angle
+        self._hp = hp
+        self._turret.update_from_server(turret_angle)
+
+    @property
+    def player_no(self):
+        return self._player_no
+
     @property
     def turret(self):
         return self._turret

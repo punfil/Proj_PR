@@ -23,6 +23,7 @@ class Game:
         # Connection related variables
         self._connection = None
         self._mutex = threading.Lock()  # This will be used for receiving information + reading from memory.
+        self._server_address = constants.default_game_server_ip
 
         # Tank related variables
         self._my_tank = None  # For easier access
@@ -51,6 +52,9 @@ class Game:
     def display_menu(self):
         self._menu.mainloop(self._screen)
 
+    def change_server_ip(self, ip):
+        self._server_address = ip
+
     def setup(self):
         pygame.init()
         pygame.display.set_caption("Project - Distracted Programming")
@@ -60,12 +64,13 @@ class Game:
 
         self._menu = pygame_menu.Menu("Tank simulator", constants.window_width, constants.window_height,
                                       theme=pygame_menu.themes.THEME_DARK);
-        self._menu.add.text_input('Server IP Address :', default='192.168.0.21')
+        self._menu.add.text_input('Server IP Address :', default=constants.default_game_server_ip, onchange=self.change_server_ip)
         self._menu.add.button("Play", self.quit_menu)
         self.display_menu()
 
+
         """initializes all variables, loads data from server"""
-        self._connection = Connection(self)
+        self._connection = Connection(self, self._server_address)
         if not self._connection.establish_connection():
             return False
         _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection._receiver.receive_configuration()
@@ -90,21 +95,32 @@ class Game:
         self._projectiles_sprites_group = pygame.sprite.Group()
         self._hp_bars_sprites_group = pygame.sprite.Group()
 
+        # Adding my tank. Opponents tanks will be added later
         self._tanks = []
-        for i in range(self._player_count):
-            spawn_point = self._spawn_points[i % len(self._spawn_points)]
-            tank = Tank(i, self, tank_spawn_x, tank_spawn_y, 0.0,  # Default angle
+        self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, 0.0,  # Default angle
                         self.load_resource("resources/tank.json"))
-            self._tanks_sprites_group.add(tank)
-            self._turrets_sprites_group.add(tank.turret)
-            self._hp_bars_sprites_group.add(tank.hp_bar)
-            self._tanks.append(tank)
-            if i == self._my_player_id:
-                self._my_tank = tank
+        self._tanks_sprites_group.add(self._my_tank)
+        self._turrets_sprites_group.add(self._my_tank.turret)
+        self._hp_bars_sprites_group.add(self._my_tank.hp_bar)
+        self._tanks.append(self._my_tank)
 
         self._connection.initialize_receiver()
 
         return True
+
+    def get_tank_with_player_id(self, player_id):
+        for i in self._tanks:
+            if i.player_no == player_id:
+                return i
+        return None
+
+    def add_new_tank(self, player_id, x, y, tank_angle):
+        tank = Tank(player_id, self,  x, y, tank_angle, self.load_resource("resources/tank.json"))
+        self._tanks_sprites_group.add(tank)
+        self._turrets_sprites_group.add(tank.turret)
+        self._hp_bars_sprites_group.add(tank.hp_bar)
+        self._tanks.append(tank)
+        print("New tank!")
 
     def load_map(self, filename):
         """loads map from file"""
@@ -153,9 +169,19 @@ class Game:
         """removes hp bar from the hp bars sprite group"""
         hp_bar.kill()
 
+    def remove_tank(self, player_id):
+        tank = self.get_tank_with_player_id(player_id)
+        self._tanks_sprites_group.remove(tank)
+        self._turrets_sprites_group.remove(tank.turret)
+        self._hp_bars_sprites_group.remove(tank.hp_bar)
+        self._tanks.remove(tank)
+
     def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle):
-        # self._tanks[player_id].update_from_server(x_location, y_location, tank_angle, hp, turret_angle)
-        self._my_tank.update_from_server(x_location, y_location, tank_angle, hp, turret_angle)
+        tank = self.get_tank_with_player_id(player_id)
+        if tank is None:
+            self.add_new_tank(player_id, x_location, y_location, tank_angle)
+        else:
+            self.get_tank_with_player_id(player_id).update_values_from_server(x_location, y_location, tank_angle, hp, turret_angle)
 
     def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
         self._connection.send_want_to_change_tank_or_turret(x_location, y_location, tank_angle, hp, turret_angle)

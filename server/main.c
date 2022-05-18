@@ -71,13 +71,13 @@ int send_payload(int sock, void* msg, uint32_t msgsize);
 struct information* receive_single_information(int* sock);
 
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids);
-void send_info_new_player_disconnected(int player_id, struct tank* tank, int* player_ids);
+void send_info_player_disconnected(int player_id, struct tank* tank, int* player_ids);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
 void* connection_handler(void* arg);
 void* player_connection_handler(void* arg);
 
-void sender(int* csock, struct tank* tank, struct singly_linked_node* projectiles);
+void sender(int* csock, int player_id, struct tank** tanks_in_game, struct singly_linked_node* projectiles, int* player_ids);
 struct singly_linked_node* receiver(int* csock);
 
 int calculate_physics(struct whole_world* my_configuration, int player_id);
@@ -196,7 +196,7 @@ void send_info_new_player_connected(int player_id, struct tank* tank, int* playe
 }
 
 //Sends info to all connected players that new player has disconnected
-void send_info_new_player_disconnected(int player_id, struct tank* tank, int* player_ids){
+void send_info_player_disconnected(int player_id, struct tank* tank, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one disconnecting!
 			struct information* sending = information_alloc();
@@ -360,7 +360,7 @@ void* connection_handler(void* arg){
 }
 
 //Sends information about everything :)
-void sender(int* csock, struct tank* tank, struct singly_linked_node* projectiles){
+void sender(int* csock, int player_id, struct tank** tanks_in_game, struct singly_linked_node* projectiles, int* player_ids){
 	struct information* information = information_alloc();
  	if (information==NULL){
  		printf("Error allocating memory in sender!\n");
@@ -369,8 +369,8 @@ void sender(int* csock, struct tank* tank, struct singly_linked_node* projectile
 	int nwrite = 0;
 
 	//Check if there are any global updates - global_sendings
-	struct singly_linked_node* iterator = global_sendings[tank->player_id];
-	global_sendings[tank->player_id] = NULL;
+	struct singly_linked_node* iterator = global_sendings[player_id];
+	global_sendings[player_id] = NULL;
 	struct singly_linked_node* free_helper = NULL;
 	while (iterator != NULL){
 		nwrite = send_payload(*csock, (void *)iterator->data, sizeof(struct information));
@@ -380,9 +380,14 @@ void sender(int* csock, struct tank* tank, struct singly_linked_node* projectile
 		free(free_helper);
 	}
 
-	//Send tank
-	information_set_values(information, UPDATE, TANK, tank->player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
-	nwrite = send_payload(*csock, information, sizeof(struct information));
+	//Send all tanks
+	for (int i=0;i<MAX_PLAYERS;i++){
+		if (player_ids[i] == USED_ID){
+			information_set_values(information, UPDATE, TANK, tanks_in_game[i]->player_id, tanks_in_game[i]->x, tanks_in_game[i]->y, tanks_in_game[i]->tank_angle, tanks_in_game[i]->hp, tanks_in_game[i]->turret_angle);
+			nwrite = send_payload(*csock, information, sizeof(struct information));		
+		}
+	}
+	
 	//Send projectiles
 	//in range len(projectiles)
 	information_free(information);
@@ -438,7 +443,7 @@ void* player_connection_handler(void* arg){
 			break;
 		}
 		printf("##INFO: Finished calculating physics for player %d\n", my_configuration->player_id);
-		sender(my_configuration->csocket, my_configuration->tank, my_configuration->projectiles);
+		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 		printf("##INFO: Finished sending information to player: %d\n", my_configuration->player_id);
 		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
 		sleep_time_minus = time_start-(float)time(NULL);

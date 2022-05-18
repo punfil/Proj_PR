@@ -123,88 +123,80 @@ class Tank(pygame.sprite.Sprite):
     def save_my_data(self):
         return self._x, self._y, self._angle, self._hp, self._turret.angle
 
-    def update_from_server(self, x_location, y_location, tank_angle, hp, turret_angle):
-        self._x = x_location
-        self._y = y_location
-        self._angle = tank_angle
-        self._hp = hp
-        self._turret._angle = turret_angle
-
     def update(self, delta_time):
-        # Temp methods for saving data
-        change = False
-        x, y, angle, hp, turret_angle = None, None, None, None, None
+        # Calculate physics only for this client's tank
         if self._player_no == self._game.my_player_id:
             x, y, angle, hp, turret_angle = self.save_my_data()
 
-        self._collision_cooldown -= delta_time
-
-        if self._shield_active:
-            self.offset_shield_hp(-self._shield_decay * delta_time)
-        else:
-            self._shield_current_cooldown -= delta_time
-
-        if self.handle_keyboard(delta_time):
-            change = True
-
-        if self._velocity.magnitude_squared() != 0:
-            change = True
-            velocity_magnitude = self._velocity.magnitude()
-            angle_vector = pygame.math.Vector2(-sin(self._angle * (pi / 180)),
-                                               -cos(self._angle * (pi / 180)))
-            angle_vector *= velocity_magnitude
-
-            if self._direction == BACKWARD:
-                angle_vector = angle_vector.rotate(180)
-                # if the tank is moving backward, invert the angle vector to make the interpolation work correctly
-                # (so the tank "front" is now on the back, and the velocity and angle vectors are closer together)
-
-            if self._driftiness > 0:
-                speed_fraction = abs(velocity_magnitude) / (self._max_speed * self._max_speed_multiplier)
-                speed_fraction **= 3
-                # difference between slow and fast drifting is more noticeable when speed_fraction is raised to 3 power
-
-                lerp_factor = self._driftiness * speed_fraction
-                if lerp_factor > 1:
-                    lerp_factor = 1
-                lerp_factor = 1 - (lerp_factor ** delta_time)
-
-                self._velocity = self._velocity.lerp(angle_vector, lerp_factor).normalize() * velocity_magnitude
-            else:
-                self._velocity = angle_vector
-
-            dx = self._velocity.x * delta_time
-            dy = self._velocity.y * delta_time
-
-            self._in_collision = False
-            if self.check_x_move(dx):
-                self._x += dx
-            else:
-                self._in_collision = True
-                self._velocity.x = 0
-            if self.check_y_move(dy):
-                self._y += dy
-            else:
-                self._in_collision = True
-                self._velocity.y = 0
-
-            tile_speed = self._game.get_tile_at_screen_position(self._x, self._y).get_attribute("move_speed")
-            self._max_speed_multiplier = tile_speed
-
-            if self._in_collision:
-                self._max_speed_multiplier *= constants.object_collision_speed_multiplier
-                if self._collision_cooldown <= 0:
-                    self._collision_cooldown = constants.object_collision_cooldown
-                    self.offset_hp(-constants.object_collision_damage)
-
-            self.rect.center = (self._x, self._y)
+            self._collision_cooldown -= delta_time
 
             if self._shield_active:
-                self._shield.rect.center = self.rect.center
+                self.offset_shield_hp(-self._shield_decay * delta_time)
+            else:
+                self._shield_current_cooldown -= delta_time
 
-        if change is True and self._player_no == self._game.my_player_id:
+            self.handle_keyboard(delta_time)
+
+            if self._velocity.magnitude_squared() != 0:
+                velocity_magnitude = self._velocity.magnitude()
+                angle_vector = pygame.math.Vector2(-sin(self._angle * (pi / 180)),
+                                                   -cos(self._angle * (pi / 180)))
+                angle_vector *= velocity_magnitude
+
+                if self._direction == BACKWARD:
+                    angle_vector = angle_vector.rotate(180)
+                    # if the tank is moving backward, invert the angle vector to make the interpolation work correctly
+                    # (so the tank "front" is now on the back, and the velocity and angle vectors are closer together)
+
+                if self._driftiness > 0:
+                    speed_fraction = abs(velocity_magnitude) / (self._max_speed * self._max_speed_multiplier)
+                    speed_fraction **= 3
+                    # difference between slow and fast drifting is more noticeable when speed_fraction is raised to 3 power
+
+                    lerp_factor = self._driftiness * speed_fraction
+                    if lerp_factor > 1:
+                        lerp_factor = 1
+                    lerp_factor = 1 - (lerp_factor ** delta_time)
+
+                    self._velocity = self._velocity.lerp(angle_vector, lerp_factor).normalize() * velocity_magnitude
+                else:
+                    self._velocity = angle_vector
+
+                dx = self._velocity.x * delta_time
+                dy = self._velocity.y * delta_time
+
+                self._in_collision = False
+                if self.check_x_move(dx):
+                    self._x += dx
+                else:
+                    self._in_collision = True
+                    self._velocity.x = 0
+                if self.check_y_move(dy):
+                    self._y += dy
+                else:
+                    self._in_collision = True
+                    self._velocity.y = 0
+
+                tile_speed = self._game.get_tile_at_screen_position(self._x, self._y).get_attribute("move_speed")
+                self._max_speed_multiplier = tile_speed
+
+                if self._in_collision:
+                    self._max_speed_multiplier *= constants.object_collision_speed_multiplier
+                    if self._collision_cooldown <= 0:
+                        self._collision_cooldown = constants.object_collision_cooldown
+                        self.offset_hp(-constants.object_collision_damage)
+
+                if self._shield_active:
+                    self._shield.rect.center = self.rect.center
+
             self._game.send_tank_position(self._x, self._y, self._angle, self._hp, self._turret.angle)
             self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
+
+        # If it's not mine tank
+        else:
+            self.rotate_not_mine()
+        # Update image for all tanks
+        self.rect.center = (self._x, self._y)
 
     def accelerate(self, acceleration):
         """applies acceleration in the direction the tank is facing"""
@@ -237,6 +229,11 @@ class Tank(pygame.sprite.Sprite):
             # aka if speeds before and after applying drag were in opposite directions
             self._velocity.x = 0
             self._velocity.y = 0
+
+    def rotate_not_mine(self):
+        self.image = pygame.transform.rotozoom(self.original_image, self._angle, 1)
+        self.rect = self.image.get_rect()
+        self.rect.center = (self._x, self._y)
 
     def rotate(self, angle):
         """rotates the tank by a given angle"""

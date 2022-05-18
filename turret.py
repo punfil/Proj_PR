@@ -92,7 +92,6 @@ class Turret(pygame.sprite.Sprite):
     def update_from_server(self, angle):
         self._angle = angle
 
-
     @property
     def angle(self):
         return self._angle

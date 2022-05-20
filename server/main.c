@@ -190,8 +190,9 @@ struct information* receive_single_information(int *sock){
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
+			printf("Trying to send info to player %d\n", i);
 			struct information* sending = information_alloc();
-			information_set_values(sending, CREATE, TANK, player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
+			information_set_values(sending, CREATE, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, 0.0, 10.0, 0.0); // default angle, HP, turret_angle
 			//Semaphore
 			singly_linked_list_add(&global_sendings[i], sending);
 			//Semaphore
@@ -214,10 +215,10 @@ void send_info_player_disconnected(int player_id, int* player_ids){
 
 //Frees memory when the client disconnects
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids){
+	set_id_available(players_ids, player_id);
 	free(csocket);
 	free(client);
 	free(tank);
-	set_id_available(players_ids, player_id);
 }
 
 //Accepts connections and creates new threads - one for each client
@@ -318,7 +319,7 @@ void* connection_handler(void* arg){
 			return NULL;
 		}
 
-		tanks_in_game[current_player_id] = (struct tank*)malloc(sizeof(struct tank));
+		tanks_in_game[current_player_id] = tank_alloc();
 		if (tanks_in_game[current_player_id] == NULL){
 			printf("Error allocating memory!\n");
 			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
@@ -331,12 +332,12 @@ void* connection_handler(void* arg){
 		pthread_mutex_unlock(&(all_mutexes[current_player_id]));
 		for_thread_set_values(for_threads[current_player_id], current_player_id, tanks_in_game[current_player_id], projectiles_in_game, csockets[current_player_id], clients[current_player_id], &players_count, world, player_ids);
 		
+		//Send information to all existing clients that new player as joined
+		send_info_new_player_connected(current_player_id, tanks_in_game[current_player_id], player_ids);
+
 		//Create new thread to serve this client
 		int result = pthread_create(&clients_threads[current_player_id], NULL, player_connection_handler, (void*)for_threads[current_player_id]);
 		pthread_detach(clients_threads[current_player_id]); //Automatically free resources when player disconnects
-		
-		//Send information to all existing clients that new player as joined
-		send_info_new_player_connected(current_player_id, tanks_in_game[current_player_id], player_ids);
 	}
 	printf("Exiting the connection handler thread!\n");
 
@@ -440,15 +441,15 @@ void* player_connection_handler(void* arg){
 		//pthread_mutex_lock(&all_mutexes[my_configuration->player_id]);
 		time_start = (float)time(NULL);
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
-		printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);
+		//printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);
 		if (calculate_physics(my_configuration->whole_world, my_configuration->player_id) == DISCONNECTED){
 			//Player sent info that wants to disconnect
 			*(my_configuration->running) = false;
 			break;
 		}
-		printf("##INFO: Finished calculating physics for player %d\n", my_configuration->player_id);
+		//printf("##INFO: Finished calculating physics for player %d\n", my_configuration->player_id);
 		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
-		printf("##INFO: Finished sending information to player: %d\n", my_configuration->player_id);
+		//printf("##INFO: Finished sending information to player: %d\n", my_configuration->player_id);
 		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
 		sleep_time_minus = time_start-(float)time(NULL);
 		sleep_time = 1/COMMUNICATION_INTERVAL - sleep_time_minus;

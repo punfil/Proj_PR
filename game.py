@@ -171,7 +171,9 @@ class Game:
 
     def remove_tank(self, player_id):
         tank = self.get_tank_with_player_id(player_id)
-        tank.kill()
+        if tank is not None:
+            tank.kill()
+            self._tanks.remove(tank)
 
     def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle):
         tank = self.get_tank_with_player_id(player_id)

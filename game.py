@@ -171,10 +171,7 @@ class Game:
 
     def remove_tank(self, player_id):
         tank = self.get_tank_with_player_id(player_id)
-        self._tanks_sprites_group.remove(tank)
-        self._turrets_sprites_group.remove(tank.turret)
-        self._hp_bars_sprites_group.remove(tank.hp_bar)
-        self._tanks.remove(tank)
+        tank.kill()
 
     def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle):
         tank = self.get_tank_with_player_id(player_id)

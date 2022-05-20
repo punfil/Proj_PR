@@ -55,6 +55,8 @@
 
 pthread_mutex_t all_mutexes[MAX_PLAYERS];
 pthread_mutex_t players_count_mutex;
+pthread_mutex_t global_receivings_mutex;
+pthread_mutex_t global_sendings_mutex;
 
 struct singly_linked_node* global_receivings[MAX_PLAYERS];
 struct singly_linked_node* global_sendings[MAX_PLAYERS];
@@ -71,7 +73,7 @@ int send_payload(int sock, void* msg, uint32_t msgsize);
 struct information* receive_single_information(int* sock);
 
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids);
-void send_info_player_disconnected(int player_id, struct tank* tank, int* player_ids);
+void send_info_player_disconnected(int player_id, int* player_ids);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
 void* connection_handler(void* arg);
@@ -117,6 +119,8 @@ void initialize_mutexes(){
 		pthread_mutex_init(&(all_mutexes[i]), NULL);
 	}
 	pthread_mutex_init(&players_count_mutex, NULL);
+	pthread_mutex_init(&global_receivings_mutex, NULL);
+	pthread_mutex_init(&global_sendings_mutex, NULL);
 }
 
 //Destroy the mutexes and free the resources
@@ -196,11 +200,11 @@ void send_info_new_player_connected(int player_id, struct tank* tank, int* playe
 }
 
 //Sends info to all connected players that new player has disconnected
-void send_info_player_disconnected(int player_id, struct tank* tank, int* player_ids){
+void send_info_player_disconnected(int player_id, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one disconnecting!
 			struct information* sending = information_alloc();
-			information_set_values(sending, DISCONNECT, TANK, player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle);
+			information_set_values(sending, DISCONNECT, TANK, player_id, 0, 0, 0.0, 0.0, 0.0);
 			//Semaphore
 			singly_linked_list_add(&global_sendings[i], sending);
 			//Semaphore
@@ -454,6 +458,7 @@ void* player_connection_handler(void* arg){
 	//mutex!
 	decrement_players_count(my_configuration->players_count);
 	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
+	send_info_player_disconnected(my_configuration->player_id, my_configuration->player_ids);
 	printf("Exiting the %d player connection handler thread!\n", my_configuration->player_id);
 
 	return NULL;
@@ -469,11 +474,11 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		struct information* data = (struct information*)(iterator->data);
 		//Create
 		if (data->action == CREATE){
-			if (data->type_of == TANK){
-				//Create tank
-			}
-			else if(data->type_of == PROJECTILE){
+			if(data->type_of == PROJECTILE){
 				//Create projectile
+			}
+			else if (data->type_of == TANK){
+				//Create tank - this never happens as tanks are created when client connects
 			}
 			else{
 				printf("###ERROR: Unknown target of command CREATE!\n");
@@ -492,7 +497,7 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 			}
 		}	
 		else if (data->action == DISCONNECT){
-			//Do something
+			//Sets the value and the player_connection_handler will do the rest :)
 			return_value = DISCONNECTED;
 		}
 		else{

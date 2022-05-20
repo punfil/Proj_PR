@@ -69,6 +69,12 @@ class Tank(pygame.sprite.Sprite):
 
         self.keys = []  # keys pressed by player
 
+    # Override
+    def kill(self):
+        self._hp_bar.kill()
+        self._turret.kill()
+        super().kill()
+
     def keyboard_input(self, keys):
         """receives pressed keys, that will be used to determine user input when updating the tank"""
         self.keys = keys

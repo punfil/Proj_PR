@@ -54,6 +54,6 @@ class Receiver:
             else:
                 print("Received command to update. The target was inappropriate!")
         elif received_information.action.decode('utf-8') == constants.information_disconnect:
-            self._game.delete_tank(received_information.player_id)
+            self._game.remove_tank(received_information.player_id)
         else:
             print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")

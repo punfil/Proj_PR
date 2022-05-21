@@ -37,31 +37,44 @@ bool projectile_with_id_exists(struct singly_linked_node* head, int projectile_i
     return false;
 }
 
+//This makes a very serious assumption - that this list works as FIFO
 void remove_projectile_from_list(struct singly_linked_node** head, int projectile_id){
     printf("Received task to remove projectile ID %d\n", projectile_id);
-    struct singly_linked_node* iterator = *head;
-    while (iterator->next != NULL && iterator->next->next != NULL && ((struct projectile*)iterator->next->data)->id != projectile_id){
-        iterator = iterator->next;
-    }
-    //If lists consists of one element
-    if (iterator == *head && iterator!=NULL){
-        projectile_free((struct projectile*)iterator->data);
-        free(iterator);
+    projectile_free((struct projectile*)(*head)->data);
+    if ((*head)->next == NULL){
+        free(*head);
         *head = NULL;
         return;
     }
-    //If it's the last element in the list
-    else if(iterator->next != NULL){
-        projectile_free((struct projectile*)iterator->next->data);
-        free(iterator);
-        iterator->next = NULL;
-    }    
     else{
-        struct singly_linked_node* temp = iterator->next;
-        iterator->next = iterator->next->next;
-        projectile_free((struct projectile*)iterator->next->data);
+        struct singly_linked_node* temp = *head;
+        *head = (*head)->next;
         free(temp);
     }
+
+    // struct singly_linked_node* iterator = *head;
+    // while (iterator->next != NULL && iterator->next->next != NULL && ((struct projectile*)iterator->next->data)->id != projectile_id){
+    //     iterator = iterator->next;
+    // }
+    // //If lists consists of one element
+    // if (iterator == *head && iterator!=NULL){
+    //     projectile_free((struct projectile*)iterator->data);
+    //     free(iterator);
+    //     *head = NULL;
+    //     return;
+    // }
+    // //If it's the last element in the list
+    // else if(iterator->next != NULL){
+    //     projectile_free((struct projectile*)iterator->next->data);
+    //     free(iterator);
+    //     iterator->next = NULL;
+    // }    
+    // else{
+    //     struct singly_linked_node* temp = iterator->next;
+    //     iterator->next = iterator->next->next;
+    //     projectile_free((struct projectile*)iterator->next->data);
+    //     free(temp);
+    // }
 }
 
 void update_projectile_values(struct singly_linked_node* head, int projectile_id, int x_location, int y_location){

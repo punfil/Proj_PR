@@ -1,4 +1,6 @@
 import pygame
+
+import constants
 from projectile import Projectile
 from math import sin, cos, pi
 import random
@@ -12,6 +14,8 @@ class Turret(pygame.sprite.Sprite):
         self._game = game
         self._angle = 0  # angle of the turret relative to tank (doesn't change when tank rotates)
         self._absolute_angle = 0  # absolute angle of the turret (changes when tank rotates)
+
+        self._projectiles = []
 
         self._rotation_speed = attributes["rotation_speed"]
         self._full_rotation = attributes["full_rotation"]
@@ -34,6 +38,35 @@ class Turret(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         self.rect.center = (self._tank.x, self._tank.y)
+
+        self._projectile_next_id = self._game._my_player_id * constants.max_projectile_count
+
+    def get_projectile_with_id(self, id):
+        for projectile in self._projectiles:
+            if projectile.id == id:
+                return projectile
+        return None
+
+    def delete_projectile(self, id):
+        projectile = self.get_projectile_with_id(id)
+        projectile.kill()
+        self._projectiles.remove(projectile)
+
+    def update_projectile(self, id, x, y):
+        projectile = self.get_projectile_with_id(id)
+        projectile.update_from_server(x, y)
+
+    def calculate_next_projectile_id(self):
+        self._projectile_next_id +=1
+        if self._projectile_next_id >= (self._game._my_player_id+1) * constants.max_projectile_count:
+            self._projectile_next_id = self._game._my_player_id * constants.max_projectile_count
+
+    def add_projectile_from_server(self, projectile_id, projectile_x, projectile_y, projectile_angle ):
+        projectile = Projectile(projectile_id, self._tank, projectile_x, projectile_y, projectile_angle,
+                                self, self._ammo)
+        self._game.add_projectile(projectile)
+        self._projectiles.append(projectile)
+        self._game.send_projectile_add(projectile.id, projectile.x, projectile.y, projectile.angle)
 
     def update(self, delta_time):
         self._current_cooldown -= delta_time
@@ -69,28 +102,35 @@ class Turret(pygame.sprite.Sprite):
             for i in range(self._projectiles_per_shot):
                 offset = self._projectile_offsets[self._projectile_offset_index]
 
-                # x offset
-                projectile_x = offset[0] * cos(-self._absolute_angle * (pi / 180))
-                projectile_y = offset[0] * sin(-self._absolute_angle * (pi / 180))
+                # # x offset
+                # projectile_x = offset[0] * cos(-self._absolute_angle * (pi / 180))
+                # projectile_y = offset[0] * sin(-self._absolute_angle * (pi / 180))
+                #
+                # # y offset
+                # projectile_x += -offset[1] * sin(self._absolute_angle * (pi / 180))
+                # projectile_y += -offset[1] * cos(self._absolute_angle * (pi / 180))
 
-                # y offset
-                projectile_x += -offset[1] * sin(self._absolute_angle * (pi / 180))
-                projectile_y += -offset[1] * cos(self._absolute_angle * (pi / 180))
+                projectile_x = self._tank.x
+                projectile_y = self._tank.y
 
-                projectile_x += self._tank.x
-                projectile_y += self._tank.y
-
-                projectile_angle = self._absolute_angle - offset[2]
+                projectile_angle = self._absolute_angle # - offset[2]
                 projectile_angle += (random.random()-0.5) * self._inaccuracy*2
 
-                projectile = Projectile(self._tank, projectile_x, projectile_y, projectile_angle, self._ammo)
+                projectile = Projectile(self._projectile_next_id, self._tank, projectile_x, projectile_y, projectile_angle, self, self._ammo)
                 self._game.add_projectile(projectile)
+                self._projectiles.append(projectile)
+                self._game.send_projectile_add(projectile.id, projectile.x, projectile.y, projectile.angle)
+                self.calculate_next_projectile_id()
 
                 self._projectile_offset_index += 1
                 self._projectile_offset_index %= len(self._projectile_offsets)
 
     def update_from_server(self, angle):
         self._angle = angle
+
+    @property
+    def game(self):
+        return self._game
 
     @property
     def angle(self):

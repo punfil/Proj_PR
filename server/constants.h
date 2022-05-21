@@ -36,10 +36,16 @@
 
 #define MAX_PROJECTILE_COUNT 20
 
-#define COMMUNICATION_INTERVAL 30.0 //Remeber to change this in every client! MUST BE FLOAT!!!
-
 #define RECEIVER_BUFFER_SIZE 28
-#define CLIENT_MOVE_WAIT 5 //uSEC
+#define CLIENT_MOVE_WAIT 20 //uSEC
+
+#define COMMUNICATION_INTERVAL 30.0
+
+//PROJECTILE ID'S
+//PLAYER 0 -> 0--9
+//PLAYER 1 -> 10--19
+//...
+#define MAX_PROJECTILES_PER_PLAYER 10
 
 
 #endif

@@ -1,10 +1,12 @@
-import ctypes
 import socket
-import threading  # If client is not already enough fun :)
+from ctypes import *
+from time import sleep
+import threading
+
+import select
 
 import constants
-from Networking.receiver import Receiver
-
+from Networking.payload_configuration import PayloadConfiguration
 from Networking.payload_information import PayloadInformation
 
 
@@ -13,10 +15,9 @@ class Connection:
         self._port = 2137
         self._address = address
         self._socket = None
-        self._receiver = None
-        self._receiver_thread = None
         self._player_id = None
         self._game = game
+        self._data_exchange_thread = None
 
     def establish_connection(self):
         try:
@@ -28,14 +29,13 @@ class Connection:
             return False
         finally:
             self._socket.settimeout(constants.socket_timeout)
-            self._receiver = Receiver(self._socket, self._game)
-            self._receiver_thread = None
             return True
 
     def close_connection(self):
         self.send_disconnect_information()
-        self._receiver.terminate()
         self._socket.close()
+
+    # Sending part
 
     def send_disconnect_information(self):
         print("##DEBUG Sending disconnect information!")
@@ -47,29 +47,77 @@ class Connection:
         self.send_single_information(constants.information_update, constants.information_tank, self.player_id,
                                      x_location, y_location, tank_angle, hp, turret_angle)
 
-    def send_want_to_new_projectile(self, x_location, y_location, tank_angle):
+    def send_want_to_new_projectile(self, projectile_id, x_location, y_location, projectile_angle):
         self.send_single_information(constants.information_create, constants.information_projectile, self.player_id,
-                                     x_location, y_location, tank_angle, constants.projectile_exists, 0.0)
+                                     x_location, y_location, projectile_angle, constants.projectile_exists,
+                                     float(projectile_id))
+
+    def send_want_to_change_projectile(self, projectile_id, x_location, y_location, projectile_angle, hp):
+        self.send_single_information(constants.information_update, constants.information_projectile, self.player_id,
+                                     x_location, y_location, projectile_angle, hp,
+                                     float(projectile_id))
 
     def send_single_information(self, action, type_of, player_id, x_location, y_location, tank_angle, hp, turret_angle):
-        payload_out = PayloadInformation(action.encode('utf-8'), type_of.encode('utf-8'), player_id, int(x_location), int(y_location), tank_angle, hp,
+        payload_out = PayloadInformation(action.encode('utf-8'), type_of.encode('utf-8'), player_id, int(x_location),
+                                         int(y_location), tank_angle, hp,
                                          turret_angle)
         nsent = self._socket.send(payload_out)
         if nsent:
             return True
         return False
 
-    def initialize_receiver(self):
-        self._receiver_thread = threading.Thread(target=self._receiver.receive_multiple_information)
-        self._receiver_thread.start()
+    # Receiving part
 
-    @property
-    def receiver(self):
-        return self._receiver
+    def receive_all_information(self):
+        quit = False
+        receivings = []
+        while quit is False:
+            r, _, _ = select.select([self._socket], [], [], 0)
+            if r:
+                buff = self._socket.recv(sizeof(PayloadInformation))
+                if len(buff) < 28:
+                    print("##DEBUG Error - received less bytes than expected!")
+                    return receivings
+                payload_in: PayloadInformation = PayloadInformation.from_buffer_copy(buff)
+                receivings.append(payload_in)
+            else:
+                quit = True
+        return receivings
 
-    @receiver.setter
-    def receiver(self, receiver):
-        self._receiver = receiver
+    def receive_configuration(self):
+        for i in range(5):  # Five tries to connect - ~5seconds
+            r, _, _ = select.select([self._socket], [], [], 0)
+            if r:
+                buff = self._socket.recv(sizeof(PayloadConfiguration))
+                payload_in = PayloadConfiguration.from_buffer_copy(buff)
+                return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
+            sleep(0.1)
+        return constants.configuration_receive_error, constants.configuration_receive_error, constants.configuration_receive_error, constants.configuration_receive_error, 0, 0, 0, 0
+
+    # Prints should be replaced with serious actions
+    def process_received_information(self, received_information_arr):
+        for received_information in received_information_arr:
+            # When searching for an item if not found we can just simply add such one!
+            if received_information.action.decode('utf-8') == constants.information_update or \
+                    received_information.action.decode('utf-8') == constants.information_create:
+                if received_information.type_of.decode('utf-8') == constants.information_tank:
+                    self._game.update_tank(received_information.player_id, received_information.x_location,
+                                           received_information.y_location,
+                                           received_information.tank_angle, received_information.hp,
+                                           received_information.turret_angle)
+                elif received_information.type_of.decode('utf-8') == constants.information_projectile:
+                    # Create projectile
+                    if received_information.action.decode('utf-8') == constants.information_create:
+                        self._game.add_projectile_from_network(received_information.player_id, int(received_information.turret_angle), received_information.x_location, received_information.y_location, received_information.tank_angle)
+                    # Update projectile
+                    elif received_information.action.decode('utf-8') == constants.information_update:
+                        self._game.update_projectile(received_information.player_id, int(received_information.turret_angle), received_information.x_location, received_information.y_location, received_information.hp)
+                else:
+                    print("Received command to update. The target was inappropriate!")
+            elif received_information.action.decode('utf-8') == constants.information_disconnect:
+                self._game.remove_tank(received_information.player_id)
+            else:
+                print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")
 
     @property
     def player_id(self):

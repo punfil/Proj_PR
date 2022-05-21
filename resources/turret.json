@@ -13,5 +13,5 @@
 		[0, 40, 0],
 		[0, 0, -180]
 	],
-	"projectiles_per_shot": 2
+	"projectiles_per_shot": 1
 }

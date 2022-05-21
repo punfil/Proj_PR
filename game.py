@@ -7,7 +7,6 @@ import pygame
 import sys
 import constants
 import json
-import threading
 import time
 
 
@@ -22,7 +21,6 @@ class Game:
 
         # Connection related variables
         self._connection = None
-        self._mutex = threading.Lock()  # This will be used for receiving information + reading from memory.
         self._server_address = constants.default_game_server_ip
 
         # Tank related variables
@@ -73,7 +71,7 @@ class Game:
         self._connection = Connection(self, self._server_address)
         if not self._connection.establish_connection():
             return False
-        _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection._receiver.receive_configuration()
+        _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_configuration()
         if self._player_count == constants.configuration_receive_error:
             print("INFO: Error connecting to server. Please try again later. Bye!")
             return False
@@ -104,8 +102,6 @@ class Game:
         self._hp_bars_sprites_group.add(self._my_tank.hp_bar)
         self._tanks.append(self._my_tank)
 
-        self._connection.initialize_receiver()
-
         return True
 
     def get_tank_with_player_id(self, player_id):
@@ -120,7 +116,6 @@ class Game:
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)
         self._tanks.append(tank)
-        print("New tank!")
 
     def load_map(self, filename):
         """loads map from file"""
@@ -169,6 +164,11 @@ class Game:
         """removes hp bar from the hp bars sprite group"""
         hp_bar.kill()
 
+    # Networking
+    def add_projectile_from_network(self, player_id, projectile_id, x_location, y_location, projectile_angle):
+        tank = self.get_tank_with_player_id(player_id)
+        tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
+
     def remove_tank(self, player_id):
         tank = self.get_tank_with_player_id(player_id)
         if tank is not None:
@@ -182,18 +182,33 @@ class Game:
         else:
             self.get_tank_with_player_id(player_id).update_values_from_server(x_location, y_location, tank_angle, hp, turret_angle)
 
+    def remove_projectile(self, player_id, projectile_id):
+        tank = self.get_tank_with_player_id(player_id)
+        tank.turret.delete_projectile(projectile_id)
+
+    def update_projectile(self, player_id, projectile_id, x_location, y_location, hp):
+        if hp == constants.projectile_not_exists:
+            self.remove_projectile(player_id, projectile_id)
+        elif hp == constants.projectile_exists:
+            tank = self.get_tank_with_player_id(player_id)
+            tank.turret.get_projectile_with_id(projectile_id).update_from_server(x_location, y_location)
+
     def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
         self._connection.send_want_to_change_tank_or_turret(x_location, y_location, tank_angle, hp, turret_angle)
 
+    def send_projectile_add(self, projectile_id, x_location, y_location, projectile_angle):
+        self._connection.send_want_to_new_projectile(projectile_id, x_location, y_location, projectile_angle)
+
+    def send_projectile_update(self, projectile_id, x_location, y_location, projectile_angle, hp):
+        self._connection.send_want_to_change_projectile(projectile_id, x_location, y_location, projectile_angle, hp)
+
     def play(self):
         """runs the game"""
-
+        a = 0
         self._background_board.draw(self._screen, draw_all=True)
 
         while True:
-            start = time.time()
-            delta_time = self._clock.tick(
-                constants.main_loop_per_second) / 1000  # number of seconds passed since the last frame
+            delta_time = self._clock.tick(30) / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
@@ -205,25 +220,29 @@ class Game:
             keys = pygame.key.get_pressed()
             self._my_tank.keyboard_input(keys)
 
+            # Calculate values and at the same time send to server
             self._tanks_sprites_group.update(delta_time)
             self._turrets_sprites_group.update(delta_time)
             self._projectiles_sprites_group.update(delta_time)
             self._hp_bars_sprites_group.update()
+
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._hp_bars_sprites_group.clear(self._screen, self._background_board.background_surface)
 
+            # Draw all the information on the screen
             self._tanks_sprites_group.draw(self._screen)
             self._turrets_sprites_group.draw(self._screen)
             self._projectiles_sprites_group.draw(self._screen)
             self._hp_bars_sprites_group.draw(self._screen)
 
-            pygame.display.flip()
+            # Receive processed information
+            received_information_arr = self._connection.receive_all_information()
+            self._connection.process_received_information(received_information_arr)
 
-            end = time.time()
-            time.sleep(1 / constants.main_loop_per_second - (start - end))
+            pygame.display.flip()
 
     @property
     def my_player_id(self):

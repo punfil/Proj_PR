@@ -74,6 +74,8 @@ struct information* receive_single_information(int* sock);
 
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids);
 void send_info_player_disconnected(int player_id, int* player_ids);
+void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids);
+void send_info_projectile_delete(int projectile_id, int* player_ids);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
 void* connection_handler(void* arg);
@@ -190,7 +192,6 @@ struct information* receive_single_information(int *sock){
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
-			printf("Trying to send info to player %d\n", i);
 			struct information* sending = information_alloc();
 			information_set_values(sending, CREATE, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, 0.0, 10.0, 0.0); // default angle, HP, turret_angle
 			//Semaphore
@@ -206,6 +207,32 @@ void send_info_player_disconnected(int player_id, int* player_ids){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one disconnecting!
 			struct information* sending = information_alloc();
 			information_set_values(sending, DISCONNECT, TANK, player_id, 0, 0, 0.0, 0.0, 0.0);
+			//Semaphore
+			singly_linked_list_add(&global_sendings[i], sending);
+			//Semaphore
+		}
+	}
+}
+
+//Sends info to all connected players that a projectile has been spawned
+void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
+			struct information* sending = information_alloc();
+			information_set_values(sending, CREATE, PROJECTILE, player_id, projectile->x, projectile->y, projectile->angle, (float)PROJECTILE_EXISTS, (float)projectile->id); // default angle, HP, turret_angle
+			//Semaphore
+			singly_linked_list_add(&global_sendings[i], sending);
+			//Semaphore
+		}
+	}
+}
+
+//Sends info to all connected players that a projectile has to die
+void send_info_projectile_delete(int projectile_id, int* player_ids){
+	for (int i=0;i<MAX_PLAYERS;i++){
+		if (player_ids[i] == USED_ID){ //Send to all connected players but not to the one disconnecting!
+			struct information* sending = information_alloc();
+			information_set_values(sending, UPDATE, PROJECTILE, i, 0, 0, 0.0, (float)PROJECTILE_NOT_EXISTS, (float)projectile_id);
 			//Semaphore
 			singly_linked_list_add(&global_sendings[i], sending);
 			//Semaphore
@@ -267,7 +294,7 @@ void* connection_handler(void* arg){
 	pthread_t clients_threads[MAX_PLAYERS];
 
 	struct whole_world* world = whole_world_alloc();
-	whole_world_set_values(world, player_ids, tanks_in_game, projectiles_in_game);
+	whole_world_set_values(world, player_ids, tanks_in_game, &projectiles_in_game);
 
 	int customer_size = sizeof(struct sockaddr_in);
 	int main_socket = create_socket(PORT);
@@ -392,9 +419,15 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct singl
 			nwrite = send_payload(*csock, information, sizeof(struct information));		
 		}
 	}
-	
-	//Send projectiles
-	//in range len(projectiles)
+	//Send all projectiles
+	iterator = projectiles;
+	while (iterator!=NULL){
+		struct projectile* temp = (struct projectile*)iterator->data;
+		information_set_values(information, UPDATE, PROJECTILE, player_id, temp->x, temp->y, temp->angle, (float)PROJECTILE_EXISTS, (float)temp->id);
+		nwrite = send_payload(*csock, information, sizeof(struct information));
+		iterator = iterator->next;
+	}
+
 	information_free(information);
 	return;
 }
@@ -431,15 +464,11 @@ void* player_connection_handler(void* arg){
 	configuration_free(configuration_to_send);
 	
 	struct singly_linked_node* received_informations;
-
-	float time_start;
-	float sleep_time_minus;
-	float sleep_time;
+	
 	while (*(my_configuration->running)){
 		//Receive the information available
 		//Remember to clean every information + list element
 		//pthread_mutex_lock(&all_mutexes[my_configuration->player_id]);
-		time_start = (float)time(NULL);
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
 		//printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);
 		if (calculate_physics(my_configuration->whole_world, my_configuration->player_id) == DISCONNECTED){
@@ -448,12 +477,9 @@ void* player_connection_handler(void* arg){
 			break;
 		}
 		//printf("##INFO: Finished calculating physics for player %d\n", my_configuration->player_id);
-		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
+		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, *my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 		//printf("##INFO: Finished sending information to player: %d\n", my_configuration->player_id);
 		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
-		sleep_time_minus = time_start-(float)time(NULL);
-		sleep_time = 1/COMMUNICATION_INTERVAL - sleep_time_minus;
-		usleep(sleep_time*1000000); //Seconds to microseconds conversion
 	}
 	printf("Client connected from %s disconnected\n", inet_ntoa(my_configuration->client->sin_addr));
 	//mutex!
@@ -477,10 +503,13 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		if (data->action == CREATE){
 			if(data->type_of == PROJECTILE){
 				//Create projectile
+				//printf("#####DEBUG: Received information: CREATE PROJECTILE ID: %d PLAYER ID: %d\n", (int)data->turret_angle, data->player_id);
+				struct projectile* projectile = projectile_alloc();
+				projectile_set_values(projectile, (int)data->turret_angle, data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp);
+				singly_linked_list_add(my_configuration->projectiles, (void*)projectile);
+				send_info_new_projectile(data->player_id, projectile, my_configuration->player_ids);
 			}
-			else if (data->type_of == TANK){
-				//Create tank - this never happens as tanks are created when client connects
-			}
+			//Create tank - this never happens as tanks are created when client connects
 			else{
 				printf("###ERROR: Unknown target of command CREATE!\n");
 			}
@@ -489,9 +518,20 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 			if (data->type_of == TANK){
 				//Update tank
 				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
+				if (data->hp<=0){
+					return_value = DISCONNECTED; //I am dead. Disconnect the player
+				}
 			}
 			else if (data->type_of == PROJECTILE){
-				//Update projectile - projectile ID required?
+				if (data->hp == PROJECTILE_NOT_EXISTS){
+					//printf("###DEBUG: Received information: DELETE PROJECTILE ID: %d PLAYER ID: %d\n", (int)data->turret_angle, data->player_id);
+					send_info_projectile_delete((int)data->turret_angle, my_configuration->player_ids);
+					remove_projectile_from_list(my_configuration->projectiles, (int)data->turret_angle);
+				}
+				else{
+					//printf("#####DEBUG: Received information: UPDATE PROJECTILE ID: %d PLAYER ID: %d\n", (int)data->turret_angle, data->player_id);
+					update_projectile_values(*my_configuration->projectiles, (int)data->turret_angle, data->x_location, data->y_location);
+				}
 			}
 			else{
 				printf("###ERROR: Unknown target of command UPDATE!\n");
@@ -512,9 +552,3 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 	//Other calculations?
 	return return_value;
 }
-/*
-TO DO's:
-a) check if client is still alive,
-b) improve receiver,
-c) implement sender, - check if update happened?
-*/

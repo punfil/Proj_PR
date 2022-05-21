@@ -3,9 +3,9 @@
 	"turret": "./resources/turret.json",
 	"shield": "./resources/shield.json",
 	"hp": 10,
-	"max_speed": 200,
-	"acceleration": 300,
-	"deceleration": 300,
+	"max_speed": 100,
+	"acceleration": 150,
+	"deceleration": 150,
 	"drag": 200,
 	"turn_rate": 135,
 	"driftiness": 0.9

@@ -118,6 +118,7 @@ class Connection:
             elif received_information.action.decode('utf-8') == constants.information_disconnect:
                 self._game.remove_tank(received_information.player_id)
             elif received_information.action.decode('utf-8') == constants.information_death:
+                print("I am dead!")
                 self._game.exit_game() # This should be changed to some screen showing you're dead
             else:
                 print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")

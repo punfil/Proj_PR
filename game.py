@@ -204,11 +204,11 @@ class Game:
 
     def play(self):
         """runs the game"""
-        a = 0
         self._background_board.draw(self._screen, draw_all=True)
-
+        delta_time = 0.0
+        received = True
         while True:
-            delta_time = self._clock.tick(30) / 1000  # number of seconds passed since the last frame
+            delta_time += self._clock.tick(45) / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")
@@ -221,26 +221,30 @@ class Game:
             self._my_tank.keyboard_input(keys)
 
             # Calculate values and at the same time send to server
-            self._tanks_sprites_group.update(delta_time)
-            self._turrets_sprites_group.update(delta_time)
-            self._projectiles_sprites_group.update(delta_time)
-            self._hp_bars_sprites_group.update()
-
+            if received is True:
+                self._tanks_sprites_group.update(delta_time)
+                self._turrets_sprites_group.update(delta_time)
+                self._projectiles_sprites_group.update(delta_time)
+                self._hp_bars_sprites_group.update()
+                delta_time = 0.0
+                received = False
 
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._hp_bars_sprites_group.clear(self._screen, self._background_board.background_surface)
 
+            # Receive processed information
+            received_information_arr = self._connection.receive_all_information()
+            if len(received_information_arr) > 0:
+                received = True
+                self._connection.process_received_information(received_information_arr)
+
             # Draw all the information on the screen
             self._tanks_sprites_group.draw(self._screen)
             self._turrets_sprites_group.draw(self._screen)
             self._projectiles_sprites_group.draw(self._screen)
             self._hp_bars_sprites_group.draw(self._screen)
-
-            # Receive processed information
-            received_information_arr = self._connection.receive_all_information()
-            self._connection.process_received_information(received_information_arr)
 
             pygame.display.flip()
 

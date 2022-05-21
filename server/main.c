@@ -483,7 +483,6 @@ void* player_connection_handler(void* arg){
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
 		//If received nothing then repeat
 		if (global_receivings[my_configuration->player_id] == NULL){
-			printf("Received nothing\n");
 			continue;
 		}
 		//printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);

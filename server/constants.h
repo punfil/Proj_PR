@@ -8,6 +8,7 @@
 #define UPDATE 'u'
 #define CREATE 'c'
 #define DISCONNECT 'd'
+#define DIE 'i'
 
 #define TANK 't'
 #define PROJECTILE 'p'
@@ -28,7 +29,11 @@
 #define WINDOW_HEIGHT 600
 #define BACKGROUND_SCALE 50
 #define USED_ID -1
+
+//For function calculate_physics
+#define OK 0
 #define DISCONNECTED -1
+#define DEAD -2
 
 #define PROJECTILE_EXISTS 1
 #define PROJECTILE_NOT_EXISTS 0
@@ -37,7 +42,8 @@
 #define MAX_PROJECTILE_COUNT 20
 
 #define RECEIVER_BUFFER_SIZE 28
-#define CLIENT_MOVE_WAIT 20 //uSEC
+#define CLIENT_MOVE_WAIT_SEC 0
+#define CLIENT_MOVE_WAIT_USEC 20 //uSEC
 
 #define COMMUNICATION_INTERVAL 30.0
 

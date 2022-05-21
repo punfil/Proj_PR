@@ -1,3 +1,4 @@
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -76,6 +77,7 @@ void send_info_new_player_connected(int player_id, struct tank* tank, int* playe
 void send_info_player_disconnected(int player_id, int* player_ids);
 void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids);
 void send_info_projectile_delete(int projectile_id, int* player_ids);
+void send_info_player_death(int* csocket, int player_id);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
 void* connection_handler(void* arg);
@@ -240,6 +242,14 @@ void send_info_projectile_delete(int projectile_id, int* player_ids){
 	}
 }
 
+//Send info to player that he died
+void send_info_player_death(int* csocket, int player_id){
+	struct information* information = information_alloc();
+	information_set_values(information, DIE, TANK, player_id, 0, 0, 0.0, 0.0, 0.0); // default angle, HP, turret_angle
+	int nwrite = send_payload(*csocket, information, sizeof(struct information));
+	information_free(information);
+}
+
 //Frees memory when the client disconnects
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids){
 	set_id_available(players_ids, player_id);
@@ -304,8 +314,8 @@ void* connection_handler(void* arg){
 	struct sockaddr_in temp_information;
 	printf("Server started listening on port %d\nInput q to stop it!\n", PORT);
 	struct timeval tv;
-	tv.tv_sec = 0;
-    tv.tv_usec = CLIENT_MOVE_WAIT;
+	tv.tv_sec = CLIENT_MOVE_WAIT_SEC;
+    tv.tv_usec = CLIENT_MOVE_WAIT_USEC;
 	int one = 1;
 	while (*running){
 		temp_socket = accept(main_socket, (struct sockaddr*) &temp_information, &customer_size);
@@ -465,13 +475,20 @@ void* player_connection_handler(void* arg){
 	
 	struct singly_linked_node* received_informations;
 	
-	while (*(my_configuration->running)){
+	int player_state = OK;
+	while (*(my_configuration->running) && player_state == OK){
 		//Receive the information available
 		//Remember to clean every information + list element
 		//pthread_mutex_lock(&all_mutexes[my_configuration->player_id]);
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
+		//If received nothing then repeat
+		if (global_receivings[my_configuration->player_id] == NULL){
+			printf("Received nothing\n");
+			continue;
+		}
 		//printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);
-		if (calculate_physics(my_configuration->whole_world, my_configuration->player_id) == DISCONNECTED){
+		player_state = calculate_physics(my_configuration->whole_world, my_configuration->player_id);
+		if (player_state == DISCONNECTED || player_state == DEAD){
 			//Player sent info that wants to disconnect
 			*(my_configuration->running) = false;
 			break;
@@ -482,6 +499,9 @@ void* player_connection_handler(void* arg){
 		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
 	}
 	printf("Client connected from %s disconnected\n", inet_ntoa(my_configuration->client->sin_addr));
+	if (player_state == DEAD){
+		send_info_player_death(my_configuration->csocket, my_configuration->player_id);
+	}
 	//mutex!
 	decrement_players_count(my_configuration->players_count);
 	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
@@ -517,9 +537,9 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		else if (data->action == UPDATE){
 			if (data->type_of == TANK){
 				//Update tank
-				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp, data->turret_angle, DEFAULT_TANK_SKIN);
+				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, MIN(data->hp, my_configuration->tanks[player_id]->hp), data->turret_angle, DEFAULT_TANK_SKIN);
 				if (data->hp<=0){
-					return_value = DISCONNECTED; //I am dead. Disconnect the player
+					return_value = DEAD; //I am dead. Disconnect the player
 				}
 			}
 			else if (data->type_of == PROJECTILE){

@@ -28,6 +28,7 @@ default_game_server_ip = "192.168.0.21"
 information_update = 'u'
 information_create = 'c'
 information_disconnect = 'd'
+information_death = 'i'
 information_tank = 't'
 information_projectile = 'p'
 information_turret = 'r'

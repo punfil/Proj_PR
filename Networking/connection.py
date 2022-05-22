@@ -37,13 +37,11 @@ class Connection:
     # Sending part
 
     def send_disconnect_information(self):
-        print("##DEBUG Sending disconnect information!")
         self.send_single_information(constants.information_disconnect, constants.information_disconnect,
                                      self._player_id, -1, -1, 0.0, 0.0, 0.0)
         #  Those variables are random, server first checks the disconnect information and closes the connection.
 
     def send_want_to_change_tank_or_turret(self, x_location, y_location, tank_angle, hp, turret_angle):
-        print(f"##SEND: Want to move to: ({x_location}, {y_location})")
         self.send_single_information(constants.information_update, constants.information_tank, self.player_id,
                                      x_location, y_location, tank_angle, hp, turret_angle)
 
@@ -101,7 +99,6 @@ class Connection:
             if received_information.action.decode('utf-8') == constants.information_update or \
                     received_information.action.decode('utf-8') == constants.information_create:
                 if received_information.type_of.decode('utf-8') == constants.information_tank:
-                    print(f"##RECEIVED: Want to move to: ({received_information.x_location}, {received_information.y_location})")
                     self._game.update_tank(received_information.player_id, received_information.x_location,
                                            received_information.y_location,
                                            received_information.tank_angle, received_information.hp,
@@ -118,8 +115,8 @@ class Connection:
             elif received_information.action.decode('utf-8') == constants.information_disconnect:
                 self._game.remove_tank(received_information.player_id)
             elif received_information.action.decode('utf-8') == constants.information_death:
-                print("I am dead!")
-                self._game.exit_game() # This should be changed to some screen showing you're dead
+                self._game.show_death_screen_and_exit() # This should be changed to some screen showing you're dead
+                return
             else:
                 print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")
 

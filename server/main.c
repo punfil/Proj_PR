@@ -54,10 +54,9 @@
 #include "whole_world.h"
 #endif
 
-pthread_mutex_t all_mutexes[MAX_PLAYERS];
+//Global variables
+pthread_mutex_t players_mutexes[MAX_PLAYERS];
 pthread_mutex_t players_count_mutex;
-pthread_mutex_t global_receivings_mutex;
-pthread_mutex_t global_sendings_mutex;
 
 struct singly_linked_node* global_receivings[MAX_PLAYERS];
 struct singly_linked_node* global_sendings[MAX_PLAYERS];
@@ -76,7 +75,7 @@ struct information* receive_single_information(int* sock);
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids);
 void send_info_player_disconnected(int player_id, int* player_ids);
 void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids);
-void send_info_projectile_delete(int projectile_id, int* player_ids);
+void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids);
 void send_info_player_death(int* csocket, int player_id);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
@@ -96,10 +95,10 @@ int main() {
 	if (result!=0){
 			printf("Failed to create thread\n");
 	}
-	while (1){
+	while (true){
 		char x;
 		scanf(" %c", &x);
-		if (x == 'q'){
+		if (x == SERVER_EXIT_BUTTON){
 			break;
 		}
 	}
@@ -112,30 +111,30 @@ int main() {
 //Used to set all the global variables to NULL
 void initialize_global_arrays(){
 	for (int i=0;i<MAX_PLAYERS;i++){
+		pthread_mutex_lock(&players_mutexes[i]);
 		global_receivings[i] = NULL;
 		global_sendings[i] = NULL;
+		pthread_mutex_unlock(&players_mutexes[i]);
 	}
 }
 
 //Initializes all mutexes to NULL
 void initialize_mutexes(){
 	for (int i=0;i<MAX_PLAYERS;i++){
-		pthread_mutex_init(&(all_mutexes[i]), NULL);
+		pthread_mutex_init(&(players_mutexes[i]), NULL);
 	}
 	pthread_mutex_init(&players_count_mutex, NULL);
-	pthread_mutex_init(&global_receivings_mutex, NULL);
-	pthread_mutex_init(&global_sendings_mutex, NULL);
 }
 
 //Destroy the mutexes and free the resources
 void destroy_mutexes(){
 	for (int i=0;i<MAX_PLAYERS;i++){
-		pthread_mutex_destroy(&(all_mutexes[i]));
+		pthread_mutex_destroy(&(players_mutexes[i]));
 	}
 	pthread_mutex_destroy(&players_count_mutex);
 }
 
-//Creates the socket
+//Creates the socket to listen
 int create_socket(int port){
 	int sock, err;
 	struct sockaddr_in server;
@@ -171,7 +170,7 @@ int send_payload(int sock, void* msg, uint32_t msgsize){
 	return nwrite;
 }
 
-//Remember to use free!!!!! Allows to receive one information struct. Memory allocation happens here!
+//Allows to receive one information struct. Memory allocation happens here!
 struct information* receive_single_information(int *sock){
 	char buff[RECEIVER_BUFFER_SIZE];
 	bzero(buff, RECEIVER_BUFFER_SIZE);
@@ -195,10 +194,10 @@ void send_info_new_player_connected(int player_id, struct tank* tank, int* playe
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
 			struct information* sending = information_alloc();
-			information_set_values(sending, CREATE, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, 0.0, 10.0, 0.0); // default angle, HP, turret_angle
-			//Semaphore
+			information_set_values(sending, CREATE, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, FULL_HP, DEFAULT_TANK_TURRET_ANGLE);
+			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
-			//Semaphore
+			pthread_mutex_unlock(&players_mutexes[i]);
 		}
 	}
 }
@@ -208,10 +207,10 @@ void send_info_player_disconnected(int player_id, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one disconnecting!
 			struct information* sending = information_alloc();
-			information_set_values(sending, DISCONNECT, TANK, player_id, 0, 0, 0.0, 0.0, 0.0);
-			//Semaphore
+			information_set_values(sending, DISCONNECT, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, EMPTY_HP, DEFAULT_TANK_TURRET_ANGLE);
+			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
-			//Semaphore
+			pthread_mutex_unlock(&players_mutexes[i]);
 		}
 	}
 }
@@ -222,22 +221,22 @@ void send_info_new_projectile(int player_id, struct projectile* projectile, int*
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
 			struct information* sending = information_alloc();
 			information_set_values(sending, CREATE, PROJECTILE, player_id, projectile->x, projectile->y, projectile->angle, (float)PROJECTILE_EXISTS, (float)projectile->id); // default angle, HP, turret_angle
-			//Semaphore
+			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
-			//Semaphore
+			pthread_mutex_unlock(&players_mutexes[i]);
 		}
 	}
 }
 
 //Sends info to all connected players that a projectile has to die
-void send_info_projectile_delete(int projectile_id, int* player_ids){
+void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
-		if (player_ids[i] == USED_ID){ //Send to all connected players but not to the one disconnecting!
+		if (player_ids[i] == USED_ID){ //Send to all connected players
 			struct information* sending = information_alloc();
-			information_set_values(sending, UPDATE, PROJECTILE, i, 0, 0, 0.0, (float)PROJECTILE_NOT_EXISTS, (float)projectile_id);
-			//Semaphore
+			information_set_values(sending, UPDATE, PROJECTILE, owner_id, POSITION_NOT_REQUIRED, POSITION_NOT_REQUIRED, (float)POSITION_NOT_REQUIRED, (float)PROJECTILE_NOT_EXISTS, (float)projectile_id);
+			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
-			//Semaphore
+			pthread_mutex_unlock(&players_mutexes[i]);
 		}
 	}
 }
@@ -245,7 +244,7 @@ void send_info_projectile_delete(int projectile_id, int* player_ids){
 //Send info to player that he died
 void send_info_player_death(int* csocket, int player_id){
 	struct information* information = information_alloc();
-	information_set_values(information, DIE, TANK, player_id, 0, 0, 0.0, 0.0, 0.0); // default angle, HP, turret_angle
+	information_set_values(information, DIE, TANK, player_id, POSITION_NOT_REQUIRED, POSITION_NOT_REQUIRED, DEFAULT_TANK_ANGLE, EMPTY_HP, DEFAULT_TANK_TURRET_ANGLE);
 	int nwrite = send_payload(*csocket, information, sizeof(struct information));
 	information_free(information);
 }
@@ -261,6 +260,10 @@ void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct 
 //Accepts connections and creates new threads - one for each client
 void* connection_handler(void* arg){
 	bool* running = (bool*) arg;
+
+	initialize_mutexes();
+	initialize_global_arrays();
+
 	//Variables for connecting and player recognition
 	int players_count = 0;
 
@@ -322,11 +325,10 @@ void* connection_handler(void* arg){
 
 		//Check if connection succeeded
 		if (temp_socket < 0){
-            printf("Information: accept() failed\n");
 			continue;
         }
 
-		//Prepare ID for the connection. If no is available then disconnect (!!!IN THE FUTURE: SEND SERVER IS FULL!!!)
+		//Prepare ID for the connection. If no is available then disconnect
 		current_player_id = return_free_id(player_ids);
 		if (current_player_id == USED_ID){
 			printf("Currently server is full of players. Try again later\n");
@@ -334,47 +336,54 @@ void* connection_handler(void* arg){
 			continue;
 		}
 		
-		//Now prepare variables for the new client
-		pthread_mutex_lock(&(all_mutexes[current_player_id]));
-		increment_players_count(&players_count);
-
-		//This might be a further function
-		csockets[current_player_id] = (int*)malloc(sizeof(int));
-		if (csockets[current_player_id] == NULL){
-			printf("Error allocating memory!\n");
-			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
-			return NULL;
-		}
-		*csockets[current_player_id] = temp_socket;
-		setsockopt(*(csockets[current_player_id]), SOL_TCP, TCP_NODELAY, &one, sizeof(one));
-		setsockopt(*(csockets[current_player_id]), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
-
+		//Now prepare variables for the new client. Blocking this mutex is not necessary however.
 		clients[current_player_id] = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
 		if (clients[current_player_id] == NULL){
 			printf("Error allocating memory!\n");
-			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
+			pthread_mutex_unlock(&(players_mutexes[current_player_id]));
 			return NULL;
 		}
 
 		tanks_in_game[current_player_id] = tank_alloc();
 		if (tanks_in_game[current_player_id] == NULL){
 			printf("Error allocating memory!\n");
-			pthread_mutex_unlock(&(all_mutexes[current_player_id]));
+			pthread_mutex_unlock(&(players_mutexes[current_player_id]));
 			return NULL;
 		}
-		
-		//sizeof(*) or sizeof()????? memcpy because accept takes pointer, so deepcopy required
-		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
 
-		pthread_mutex_unlock(&(all_mutexes[current_player_id]));
+		csockets[current_player_id] = (int*)malloc(sizeof(int));
+		if (csockets[current_player_id] == NULL){
+			printf("Error allocating memory!\n");
+			pthread_mutex_unlock(&(players_mutexes[current_player_id]));
+			return NULL;
+		}
+
+		pthread_mutex_lock(&(players_mutexes[current_player_id]));
+
+		pthread_mutex_lock(&players_count_mutex);
+		increment_players_count(&players_count);
+		pthread_mutex_unlock(&players_count_mutex);
+
+		
+		*csockets[current_player_id] = temp_socket;
+			
+		tank_set_values(tanks_in_game[current_player_id], current_player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, FULL_HP, DEFAULT_TANK_TURRET_ANGLE, DEFAULT_TANK_SKIN);
+		
+		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
+		
+		pthread_mutex_unlock(&(players_mutexes[current_player_id]));
+		
+		setsockopt(*(csockets[current_player_id]), SOL_TCP, TCP_NODELAY, &one, sizeof(one));
+		setsockopt(*(csockets[current_player_id]), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));	
+
 		for_thread_set_values(for_threads[current_player_id], current_player_id, tanks_in_game[current_player_id], projectiles_in_game, csockets[current_player_id], clients[current_player_id], &players_count, world, player_ids);
 		
-		//Send information to all existing clients that new player as joined
+		//Send information to all existing clients that new player has joined
 		send_info_new_player_connected(current_player_id, tanks_in_game[current_player_id], player_ids);
 
 		//Create new thread to serve this client
 		int result = pthread_create(&clients_threads[current_player_id], NULL, player_connection_handler, (void*)for_threads[current_player_id]);
-		pthread_detach(clients_threads[current_player_id]); //Automatically free resources when player disconnects
+		pthread_detach(clients_threads[current_player_id]); //Automatically free resources after thread when player disconnects
 	}
 	printf("Exiting the connection handler thread!\n");
 
@@ -395,6 +404,8 @@ void* connection_handler(void* arg){
 	}
 	free(for_threads);
 	free(clients);
+
+	destroy_mutexes();
 
 	close_socket(main_socket);
 	
@@ -433,7 +444,7 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct singl
 	iterator = projectiles;
 	while (iterator!=NULL){
 		struct projectile* temp = (struct projectile*)iterator->data;
-		information_set_values(information, UPDATE, PROJECTILE, player_id, temp->x, temp->y, temp->angle, (float)PROJECTILE_EXISTS, (float)temp->id);
+		information_set_values(information, UPDATE, PROJECTILE, temp->owner_id, temp->x, temp->y, temp->angle, (float)PROJECTILE_EXISTS, (float)temp->id);
 		nwrite = send_payload(*csock, information, sizeof(struct information));
 		iterator = iterator->next;
 	}
@@ -469,7 +480,7 @@ void* player_connection_handler(void* arg){
 	tank_set_values(my_configuration->tank, my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, NO_ROTATION, FULL_HP, NO_ROTATION, DEFAULT_TANK_SKIN);
 
 	send_payload(*(my_configuration->csocket), configuration_to_send, sizeof(struct configuration));
-	printf("New client connected from %s\n", inet_ntoa(my_configuration->client->sin_addr));
+	printf("New client player ID:%d connected from %s\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
 
 	configuration_free(configuration_to_send);
 	
@@ -479,33 +490,29 @@ void* player_connection_handler(void* arg){
 	while (*(my_configuration->running) && player_state == OK){
 		//Receive the information available
 		//Remember to clean every information + list element
-		//pthread_mutex_lock(&all_mutexes[my_configuration->player_id]);
+		//No need to use mutex - only this player can access global_receiving[player_id]
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
 		//If received nothing then repeat
 		if (global_receivings[my_configuration->player_id] == NULL){
 			continue;
 		}
-		//printf("###INFO: Finished receiving info's from player: %d\n", my_configuration->player_id);
 		player_state = calculate_physics(my_configuration->whole_world, my_configuration->player_id);
 		if (player_state == DISCONNECTED || player_state == DEAD){
-			//Player sent info that wants to disconnect
+			//Player sent info that he wants to disconnect
 			*(my_configuration->running) = false;
 			break;
 		}
-		//printf("##INFO: Finished calculating physics for player %d\n", my_configuration->player_id);
 		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, *my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
-		//printf("##INFO: Finished sending information to player: %d\n", my_configuration->player_id);
-		//pthread_mutex_unlock(&all_mutexes[my_configuration->player_id]);
 	}
-	printf("Client connected from %s disconnected\n", inet_ntoa(my_configuration->client->sin_addr));
+	printf("Client player ID:%d connected from %s disconnected\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
 	if (player_state == DEAD){
 		send_info_player_death(my_configuration->csocket, my_configuration->player_id);
 	}
-	//mutex!
+	pthread_mutex_lock(&players_count_mutex);
 	decrement_players_count(my_configuration->players_count);
-	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
+	pthread_mutex_unlock(&players_count_mutex);
 	send_info_player_disconnected(my_configuration->player_id, my_configuration->player_ids);
-	printf("Exiting the %d player connection handler thread!\n", my_configuration->player_id);
+	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
 
 	return NULL;
 }
@@ -521,8 +528,6 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		//Create
 		if (data->action == CREATE){
 			if(data->type_of == PROJECTILE){
-				//Create projectile
-				//printf("#####DEBUG: Received information: CREATE PROJECTILE ID: %d PLAYER ID: %d\n", (int)data->turret_angle, data->player_id);
 				struct projectile* projectile = projectile_alloc();
 				projectile_set_values(projectile, (int)data->turret_angle, data->player_id, data->x_location, data->y_location, data->tank_angle, data->hp);
 				singly_linked_list_add(my_configuration->projectiles, (void*)projectile);
@@ -537,18 +542,16 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 			if (data->type_of == TANK){
 				//Update tank
 				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, MIN(data->hp, my_configuration->tanks[player_id]->hp), data->turret_angle, DEFAULT_TANK_SKIN);
-				if (data->hp<=0){
-					return_value = DEAD; //I am dead. Disconnect the player
+				if (data->hp<=EMPTY_HP){
+					return_value = DEAD; //I am dead. Disconnect the player. Player connection handler will do the rest.
 				}
 			}
 			else if (data->type_of == PROJECTILE){
-				if (data->hp == PROJECTILE_NOT_EXISTS){
-					//printf("###DEBUG: Received information: DELETE PROJECTILE ID: %d PLAYER ID: %d\n", (int)data->turret_angle, data->player_id);
-					send_info_projectile_delete((int)data->turret_angle, my_configuration->player_ids);
+				if (data->hp == PROJECTILE_NOT_EXISTS){ //Received that projectile should be removed from the board
+					send_info_projectile_delete(player_id, (int)data->turret_angle, my_configuration->player_ids);
 					remove_projectile_from_list(my_configuration->projectiles, (int)data->turret_angle);
 				}
-				else{
-					//printf("#####DEBUG: Received information: UPDATE PROJECTILE ID: %d PLAYER ID: %d\n", (int)data->turret_angle, data->player_id);
+				else{ //Projectile is still alive
 					update_projectile_values(*my_configuration->projectiles, (int)data->turret_angle, data->x_location, data->y_location);
 				}
 			}
@@ -568,6 +571,5 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		information_free(free_help->data);
 		free(free_help);
 	}
-	//Other calculations?
 	return return_value;
 }

@@ -1,3 +1,5 @@
+import time
+
 import pygame_menu.themes
 
 from Boards.background_board import BackgroundBoard
@@ -7,7 +9,6 @@ import pygame
 import sys
 import constants
 import json
-import time
 
 
 class Game:
@@ -62,18 +63,24 @@ class Game:
 
         self._menu = pygame_menu.Menu("Tank simulator", constants.window_width, constants.window_height,
                                       theme=pygame_menu.themes.THEME_DARK);
-        self._menu.add.text_input('Server IP Address :', default=constants.default_game_server_ip, onchange=self.change_server_ip)
+        self._menu.add.text_input('Server IP Address :', default=constants.default_game_server_ip,
+                                  onchange=self.change_server_ip)
         self._menu.add.button("Play", self.quit_menu)
-        self.display_menu()
 
+        def exit_game_button():
+            self.exit_game(False)
+
+        self._menu.add.button("Quit", exit_game_button)
+        self.display_menu()
 
         """initializes all variables, loads data from server"""
         self._connection = Connection(self, self._server_address)
         if not self._connection.establish_connection():
+            self.show_server_full_or_busy_screen()
             return False
         _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_configuration()
         if self._player_count == constants.configuration_receive_error:
-            print("INFO: Error connecting to server. Please try again later. Bye!")
+            self.show_server_full_or_busy_screen()
             return False
         self._connection.player_id = self._my_player_id
 
@@ -96,7 +103,7 @@ class Game:
         # Adding my tank. Opponents tanks will be added later
         self._tanks = []
         self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, 0.0,  # Default angle
-                        self.load_resource("resources/tank.json"))
+                             self.load_resource("resources/tank.json"))
         self._tanks_sprites_group.add(self._my_tank)
         self._turrets_sprites_group.add(self._my_tank.turret)
         self._hp_bars_sprites_group.add(self._my_tank.hp_bar)
@@ -111,7 +118,7 @@ class Game:
         return None
 
     def add_new_tank(self, player_id, x, y, tank_angle):
-        tank = Tank(player_id, self,  x, y, tank_angle, self.load_resource("resources/tank.json"))
+        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource("resources/tank.json"))
         self._tanks_sprites_group.add(tank)
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)
@@ -147,9 +154,39 @@ class Game:
         """converts screen position (in pixels) to grid position (in tiles)"""
         return int(x / self._background_scale), int(y / self._background_scale)
 
-    def exit_game(self):
-        """closes the connection with server and exits game"""
+    def show_server_full_or_busy_screen(self):
+        finished = False
+        time_start = time.time()
+        dead_image = pygame.image.load("Pictures/busy_or_full.png").convert_alpha()
+        self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
+        while not finished:
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
+                    finished = True
+            pygame.display.flip()
+            if time.time() - time_start > constants.server_full_or_busy_screen_display_time_sec:
+                finished = True
+        sys.exit(0)
+
+    def show_death_screen_and_exit(self):
         self._connection.close_connection()
+        finished = False
+        time_start = time.time()
+        dead_image = pygame.image.load("Pictures/dead.png").convert_alpha()
+        self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
+        while not finished:
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
+                    finished = True
+            pygame.display.flip()
+            if time.time() - time_start > constants.death_screen_display_time_sec:
+                finished = True
+        sys.exit(0)
+
+    def exit_game(self, should_close_connection):
+        """closes the connection with server and exits game"""
+        if should_close_connection:
+            self._connection.close_connection()
         sys.exit(0)
 
     def add_projectile(self, projectile):
@@ -180,7 +217,8 @@ class Game:
         if tank is None:
             self.add_new_tank(player_id, x_location, y_location, tank_angle)
         else:
-            self.get_tank_with_player_id(player_id).update_values_from_server(x_location, y_location, tank_angle, hp, turret_angle)
+            self.get_tank_with_player_id(player_id).update_values_from_server(x_location, y_location, tank_angle, hp,
+                                                                              turret_angle)
 
     def remove_projectile(self, player_id, projectile_id):
         tank = self.get_tank_with_player_id(player_id)
@@ -215,7 +253,7 @@ class Game:
 
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
-                    self.exit_game()
+                    self.exit_game(True)
 
             keys = pygame.key.get_pressed()
             self._my_tank.keyboard_input(keys)

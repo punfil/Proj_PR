@@ -161,7 +161,7 @@ class MapEditor(Game):
 
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
-                    self.exit_game()
+                    self.exit_game(False)
                 if ev.type == pygame.KEYDOWN:
                     if ev.key == pygame.K_x:
                         x_symmetry = not x_symmetry

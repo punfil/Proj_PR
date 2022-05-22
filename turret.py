@@ -66,7 +66,6 @@ class Turret(pygame.sprite.Sprite):
                                 self, self._ammo)
         self._game.add_projectile(projectile)
         self._projectiles.append(projectile)
-        self._game.send_projectile_add(projectile.id, projectile.x, projectile.y, projectile.angle)
 
     def update(self, delta_time):
         self._current_cooldown -= delta_time

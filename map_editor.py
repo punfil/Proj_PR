@@ -72,10 +72,10 @@ class MapEditor(Game):
     def set_cursor_positions(self, grid_x, grid_y, symmetry_x, symmetry_y):
         """sets all cursor positions to all four possible combinations of grid (x, y) and symmetry (x,y)"""
         scale = self._background_scale
-        self._cursors["normal"].rect.topleft = grid_x*scale, grid_y*scale
-        self._cursors["x_symmetry"].rect.topleft = symmetry_x*scale, grid_y*scale
-        self._cursors["y_symmetry"].rect.topleft = grid_x*scale, symmetry_y*scale
-        self._cursors["point_symmetry"].rect.topleft = symmetry_x*scale, symmetry_y*scale
+        self._cursors["normal"].rect.topleft = grid_x * scale, grid_y * scale
+        self._cursors["x_symmetry"].rect.topleft = symmetry_x * scale, grid_y * scale
+        self._cursors["y_symmetry"].rect.topleft = grid_x * scale, symmetry_y * scale
+        self._cursors["point_symmetry"].rect.topleft = symmetry_x * scale, symmetry_y * scale
 
     def hide_cursor(self, cursor_name):
         """hides cursor with the specified name. If it was already hidden, nothing happens"""
@@ -110,8 +110,8 @@ class MapEditor(Game):
             sp_sprite = pygame.sprite.Sprite()
             sp_sprite.image = self._spawn_point_image
             sp_sprite.rect = sp_sprite.image.get_rect()
-            sp_sprite.rect.center = (x * self._background_scale + self._background_scale/2,
-                                     y * self._background_scale + self._background_scale/2)
+            sp_sprite.rect.center = (x * self._background_scale + self._background_scale / 2,
+                                     y * self._background_scale + self._background_scale / 2)
             self._spawn_points_sprites_group.add(sp_sprite)
 
     def rotate_spawn_point(self, x, y, angle):

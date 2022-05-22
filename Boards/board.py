@@ -23,4 +23,3 @@ class TankBoard:
     @property
     def width(self):
         return self._width
-

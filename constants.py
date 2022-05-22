@@ -19,18 +19,15 @@ shield_bar_empty_color = "#cccccc"
 death_screen_display_time_sec = 3
 server_full_or_busy_screen_display_time_sec = 2
 
-
 """Physics constants"""
 object_collision_damage = 0.5
 object_collision_cooldown = 0.5
 object_collision_speed_multiplier = 0.5
 
-
 """Projectiles constants"""
 max_projectile_count = 10
 projectile_exists = 1
 projectile_not_exists = 0
-
 
 """Networking variables"""""
 game_port = 2137
@@ -39,7 +36,6 @@ configuration_receive_timeout = 1
 configuration_receive_error = -1
 socket_timeout = 100.00
 full_server = -99
-
 
 """For information.action"""
 information_update = 'u'
@@ -50,7 +46,6 @@ information_death = 'i'
 """For information.type_of"""
 information_tank = 't'
 information_projectile = 'p'
-
 
 """Map editor"""
 default_map_editor_tile = "./resources/grass.json"

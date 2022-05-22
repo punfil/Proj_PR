@@ -106,16 +106,23 @@ class Connection:
                 elif received_information.type_of.decode('utf-8') == constants.information_projectile:
                     # Create projectile
                     if received_information.action.decode('utf-8') == constants.information_create:
-                        self._game.add_projectile_from_network(received_information.player_id, int(received_information.turret_angle), received_information.x_location, received_information.y_location, received_information.tank_angle)
+                        self._game.add_projectile_from_network(received_information.player_id,
+                                                               int(received_information.turret_angle),
+                                                               received_information.x_location,
+                                                               received_information.y_location,
+                                                               received_information.tank_angle)
                     # Update projectile
                     elif received_information.action.decode('utf-8') == constants.information_update:
-                        self._game.update_projectile(received_information.player_id, int(received_information.turret_angle), received_information.x_location, received_information.y_location, received_information.hp)
+                        self._game.update_projectile(received_information.player_id,
+                                                     int(received_information.turret_angle),
+                                                     received_information.x_location, received_information.y_location,
+                                                     received_information.hp)
                 else:
                     print("Received command to update. The target was inappropriate!")
             elif received_information.action.decode('utf-8') == constants.information_disconnect:
                 self._game.remove_tank(received_information.player_id)
             elif received_information.action.decode('utf-8') == constants.information_death:
-                self._game.show_death_screen_and_exit() # This should be changed to some screen showing you're dead
+                self._game.show_death_screen_and_exit()  # This should be changed to some screen showing you're dead
                 return
             else:
                 print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")

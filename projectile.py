@@ -29,14 +29,16 @@ class Projectile(pygame.sprite.Sprite):
             x, y = self.save_my_data()
             self._lifetime -= delta_time
             if self._lifetime <= 0 and self._alive:
-                self._turret.game.send_projectile_update(self._id, self._x, self._y, self._angle, constants.projectile_not_exists)
+                self._turret.game.send_projectile_update(self._id, self._x, self._y, self._angle,
+                                                         constants.projectile_not_exists)
                 self._alive = False
                 return
             dx = -self._speed * sin(self._angle * (pi / 180)) * delta_time
             dy = -self._speed * cos(self._angle * (pi / 180)) * delta_time
             self._x += dx
             self._y += dy
-            self._turret.game.send_projectile_update(self._id, self._x, self._y, self._angle, constants.projectile_exists)
+            self._turret.game.send_projectile_update(self._id, self._x, self._y, self._angle,
+                                                     constants.projectile_exists)
             self._x, self._y = x, y
         self.rect.center = (self._x, self._y)
 

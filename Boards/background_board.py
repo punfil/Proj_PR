@@ -27,7 +27,7 @@ class BackgroundBoard:
     def get_screen_position(self, x, y):
         """returns the screen position (in pixels) corresponding to the tile grid position (x,y)"""
         # todo, I'm not sure if this method should be here - the background board logic doesn't have much to do with screen and pixels
-        pos = (x*self._scale, y*self._scale)
+        pos = (x * self._scale, y * self._scale)
         return pos
 
     def draw(self, screen, draw_all=False):

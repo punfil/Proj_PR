@@ -57,11 +57,11 @@ class Turret(pygame.sprite.Sprite):
         projectile.update_from_server(x, y)
 
     def calculate_next_projectile_id(self):
-        self._projectile_next_id +=1
-        if self._projectile_next_id >= (self._game._my_player_id+1) * constants.max_projectile_count:
+        self._projectile_next_id += 1
+        if self._projectile_next_id >= (self._game._my_player_id + 1) * constants.max_projectile_count:
             self._projectile_next_id = self._game._my_player_id * constants.max_projectile_count
 
-    def add_projectile_from_server(self, projectile_id, projectile_x, projectile_y, projectile_angle ):
+    def add_projectile_from_server(self, projectile_id, projectile_x, projectile_y, projectile_angle):
         projectile = Projectile(projectile_id, self._tank, projectile_x, projectile_y, projectile_angle,
                                 self, self._ammo)
         self._game.add_projectile(projectile)
@@ -112,10 +112,11 @@ class Turret(pygame.sprite.Sprite):
                 projectile_x = self._tank.x
                 projectile_y = self._tank.y
 
-                projectile_angle = self._absolute_angle # - offset[2]
-                projectile_angle += (random.random()-0.5) * self._inaccuracy*2
+                projectile_angle = self._absolute_angle  # - offset[2]
+                projectile_angle += (random.random() - 0.5) * self._inaccuracy * 2
 
-                projectile = Projectile(self._projectile_next_id, self._tank, projectile_x, projectile_y, projectile_angle, self, self._ammo)
+                projectile = Projectile(self._projectile_next_id, self._tank, projectile_x, projectile_y,
+                                        projectile_angle, self, self._ammo)
                 self._game.add_projectile(projectile)
                 self._projectiles.append(projectile)
                 self._game.send_projectile_add(projectile.id, projectile.x, projectile.y, projectile.angle)

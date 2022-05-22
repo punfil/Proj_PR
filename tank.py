@@ -240,7 +240,7 @@ class Tank(pygame.sprite.Sprite):
     def rotate_not_mine(self):
         self.image = pygame.transform.rotozoom(self.original_image, self._angle, 1)
         self.rect = self.image.get_rect()
-        #self.rect.center = (self._x, self._y)
+        # self.rect.center = (self._x, self._y)
 
     def rotate(self, angle):
         """rotates the tank by a given angle"""
@@ -249,7 +249,7 @@ class Tank(pygame.sprite.Sprite):
 
         self.image = pygame.transform.rotozoom(self.original_image, self._angle, 1)
         self.rect = self.image.get_rect()
-        #self.rect.center = (self._x, self._y)
+        # self.rect.center = (self._x, self._y)
 
     def rotate_turret(self, angle):
         """rotates the tank turret by a given angle"""

@@ -1,9 +1,16 @@
-import json
 import pygame
-from tile import Tile
+from client.tile import Tile
 
 
 class BackgroundBoard:
+    """
+    Represents the board with elements of the map like houses, trees, paths
+    Attributes:
+        _game: Game object
+        _width: width of the board scaled
+        _height: height of the board scaled
+        ...other
+    """
     def __init__(self, game, width, height, scale):
         self._game = game
 
@@ -15,24 +22,47 @@ class BackgroundBoard:
         self._updated_tiles = []
 
     def set_tile(self, x, y, tile):
-        """sets tile at grid position (x,y). Also updates the background surface"""
+        """
+        Sets tile at grid position (x,y). Also updates the background surface
+        :param int x: X coordinate of the tile to be set
+        :param int y: Y coordinate of the tile to be set
+        :param Tile tile: New Tile object to be set at given location
+        :return: None
+        """
         self._background_board[x][y] = tile
         self._background_surface.blit(tile.get_attribute("texture"), self.get_screen_position(x, y))
         self._updated_tiles.append(tile)
 
     def get_tile(self, x, y):
-        """returns tile at grid position (x,y)"""
+        """
+        Returns tile at grid position (x,y)
+        :param int x: X coordinate of the tile to be returned
+        :param int y: Y coordinate of the tile to be returned
+        :return: Tile at grid position (x, y)
+        :rtype: Tile
+        """
         return self._background_board[x][y]
 
     def get_screen_position(self, x, y):
-        """returns the screen position (in pixels) corresponding to the tile grid position (x,y)"""
+        """
+        Returns the screen position (in pixels) corresponding to the tile grid position (x,y)
+        :param int x: X coordinate of the position on the grid
+        :param int y: Y coordinate of the position on the grid
+        :return: Position on the screen
+        :rtype: (int, int)
+        """
         # todo, I'm not sure if this method should be here - the background board logic doesn't have much to do with screen and pixels
         pos = (x * self._scale, y * self._scale)
         return pos
 
     def draw(self, screen, draw_all=False):
-        """draws the background board surface on screen.
+        """
+        Draws the background board surface on screen.
         By default, draws only the tiles that were updated since the last draw. With draw_all=True, draws everything.
+        :param screen: Screen we blit the board on
+        :param draw_all: If the function should draw all the tiles no matter if they were update since last function call
+        :type draw_all: bool or None
+        :return: None
         """
         if draw_all:
             screen.blit(self._background_surface, (0, 0))
@@ -45,7 +75,11 @@ class BackgroundBoard:
         self._updated_tiles = []
 
     def serialize(self):
-        """serializes the board into a dict object"""
+        """
+        Serializes the board into a dict object
+        :return: Dictionary containing the board
+        :rtype: dict
+        """
 
         board_data = {
             "width": self._width,
@@ -78,7 +112,11 @@ class BackgroundBoard:
         return board_data
 
     def deserialize(self, board_data):
-        """deserializes the board from a dict object"""
+        """
+        Deserializes the board from a dict object
+        :param dict board_data: Dictionary containing serialized board
+        :return: None
+        """
 
         self._width = board_data["width"]
         self._height = board_data["height"]

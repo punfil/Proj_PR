@@ -5,6 +5,12 @@ import constants
 
 
 class Projectile(pygame.sprite.Sprite):
+    """
+    Represents projectile object.
+    Attributes:
+        _id: ID of the projectile (unique)
+        ..others
+    """
     def __init__(self, id, owner, x, y, angle, turret, attributes):
         super().__init__()
         self._id = id
@@ -25,6 +31,12 @@ class Projectile(pygame.sprite.Sprite):
         self.rect.center = (self._x, self._y)
 
     def update(self, delta_time):
+        """
+        Overrides the method from pygame.sprite.Sprite
+        Updates projectiles position
+        :param float delta_time: Time elapsed since last call of this function
+        :return: None
+        """
         if self._owner.player_no == self._turret.game._my_player_id and self._alive:
             x, y = self.save_my_data()
             self._lifetime -= delta_time
@@ -43,10 +55,21 @@ class Projectile(pygame.sprite.Sprite):
         self.rect.center = (self._x, self._y)
 
     def update_from_server(self, x, y):
+        """
+        Updates coordinates of the projectile according to the information received from server
+        :param int x: X coordinate of the projectile's location
+        :param y: Y coordinate of the projectile's location
+        :return: None
+        """
         self._x = x
         self._y = y
 
     def save_my_data(self):
+        """
+        Function that returns the location of the projectile
+        :return: (x, y) of the projectile's location
+        :rtype (int, int)
+        """
         return self._x, self._y
 
     @property

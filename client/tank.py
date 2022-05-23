@@ -9,6 +9,12 @@ BACKWARD = 0
 
 
 class Tank(pygame.sprite.Sprite):
+    """
+    Represents tank object in the game
+    Attributes:
+        _player_no: ID of the player that this tank belongs to
+        ..other
+    """
     def __init__(self, player_no, game, x, y, angle, attributes):
         super().__init__()
         self._player_no = player_no
@@ -71,16 +77,29 @@ class Tank(pygame.sprite.Sprite):
 
     # Override
     def kill(self):
+        """
+        Delete this tank from the board
+        :return: None
+        """
         self._hp_bar.kill()
         self._turret.kill()
         super().kill()
 
     def keyboard_input(self, keys):
-        """receives pressed keys, that will be used to determine user input when updating the tank"""
+        """
+        Receives pressed keys, that will be used to determine user input when updating the tank
+        :param ? keys: Input from the keyboard
+        :return: None
+        """
         self.keys = keys
 
     def handle_keyboard(self, delta_time):
-        """controls the tank, based on pressed keys"""
+        """
+        Controls the tank, based on pressed keys
+        :param float delta_time: Time elapsed since last call of this function
+        :return: If no keys were pressed False else True
+        :rtype: bool
+        """
 
         if not self.keys:
             return False
@@ -127,9 +146,19 @@ class Tank(pygame.sprite.Sprite):
         return True
 
     def save_my_data(self):
+        """
+        Returns all the most important variables of the tank
+        :return: x, y, angle, hp and turret's angle of the tank
+        :rtype: (int, int, float, float, float)
+        """
         return self._x, self._y, self._angle, self._hp, self._turret.angle
 
     def update(self, delta_time):
+        """
+        Calculates physics for this client's tank and updates rotation and image position for all tanks
+        :param float delta_time: Time elapsed since last call of this function
+        :return: None
+        """
         # Calculate physics only for this client's tank
         if self._player_no == self._game.my_player_id:
             x, y, angle, hp, turret_angle = self.save_my_data()
@@ -206,7 +235,11 @@ class Tank(pygame.sprite.Sprite):
         self.rect.center = (self._x, self._y)
 
     def accelerate(self, acceleration):
-        """applies acceleration in the direction the tank is facing"""
+        """
+        Applies acceleration in the direction the tank is facing
+        :param float acceleration: Value of the acceleration
+        :return: None
+        """
 
         if self._velocity.magnitude_squared() == 0:
             self._direction = FORWARD if acceleration > 0 else BACKWARD
@@ -220,7 +253,11 @@ class Tank(pygame.sprite.Sprite):
             self._velocity = self._velocity.normalize() * max_speed_with_multiplier
 
     def apply_drag(self, drag):
-        """slows down the tank by a given drag value"""
+        """
+        Slows down the tank by a given drag value
+        :param float drag: Drag value
+        :return: None
+        """
 
         if self._velocity.magnitude_squared() == 0:
             return
@@ -238,12 +275,19 @@ class Tank(pygame.sprite.Sprite):
             self._velocity.y = 0
 
     def rotate_not_mine(self):
+        """
+        Rotates the image of the tank that does not belong to this client
+        :return: None
+        """
         self.image = pygame.transform.rotozoom(self.original_image, self._angle, 1)
         self.rect = self.image.get_rect()
-        # self.rect.center = (self._x, self._y)
 
     def rotate(self, angle):
-        """rotates the tank by a given angle"""
+        """
+        Rotates this client's tank by a given angle
+        :param float angle: Angle this tank should be rotated
+        :return: None
+        """
         self._angle += angle
         self._angle %= 360
 
@@ -252,11 +296,18 @@ class Tank(pygame.sprite.Sprite):
         # self.rect.center = (self._x, self._y)
 
     def rotate_turret(self, angle):
-        """rotates the tank turret by a given angle"""
+        """
+        Rotates the tank turret by a given angle
+        :param float angle: Angle this client's tank's turret should be rotated
+        :return: None
+        """
         self._turret.rotate(angle)
 
     def activate_shield(self):
-        """activates the shield if it is ready (cooldown <= 0)"""
+        """
+        Activates the shield if it is ready (cooldown <= 0)
+        :return: None
+        """
         if not self._shield_active and self._shield_current_cooldown <= 0:
             self._shield_active = True
             self._shield_current_cooldown = self._shield_cooldown
@@ -267,7 +318,11 @@ class Tank(pygame.sprite.Sprite):
             self.groups()[0].add(self._shield)  # a bit hacky but whatever
 
     def offset_hp(self, value):
-        """changes the tank's hp by a given value"""
+        """
+        Changes the tank's hp by a given value
+        :param float value: Value that the HP should be applied offset
+        :return: None
+        """
         if not self._shield_active:
             self._hp += value
             self._hp_bar.update_hp(self._hp)
@@ -275,7 +330,11 @@ class Tank(pygame.sprite.Sprite):
             self.offset_shield_hp(value)
 
     def offset_shield_hp(self, value):
-        """changes the tank's shield hp by a given value. Disables the shield if its hp is lesser or equal to 0"""
+        """
+        Changes the tank's shield hp by a given value. Disables the shield if its hp is lesser or equal to 0
+        :param float value: Value that the shield's HP should be applied offset
+        :return: None
+        """
         self._shield_hp += value
 
         if self._shield_hp <= 0:
@@ -287,7 +346,12 @@ class Tank(pygame.sprite.Sprite):
             self._shield_bar.update_hp(self._shield_hp)
 
     def check_y_move(self, value):
-        """checks if the tank can move to position (x, y+value)"""
+        """
+        Checks if the tank can move to position (x, y+value)
+        :param int value: Value how many tiles wants to move in Y-axis
+        :return: If it's possible to move so
+        :rtype: bool
+        """
         if self._y + value < 0 or self._y + value > constants.window_height:
             return False
         if self._game.get_tile_at_screen_position(self._x, self._y + value).get_attribute("blocks_movement"):
@@ -295,7 +359,13 @@ class Tank(pygame.sprite.Sprite):
         return True
 
     def check_x_move(self, value):
-        """checks if the tank can move to position (x+value, y)"""
+        """
+        Checks if the tank can move to position (x+value, y)
+        :param int value: Value how many tiles wants to move in Y-axis
+        :return: If it's possible to move so
+        :rtype: bool
+        """
+
         if self._x + value < 0 or self._x + value > constants.window_width:
             return False
         if self._game.get_tile_at_screen_position(self._x + value, self._y).get_attribute("blocks_movement"):
@@ -303,6 +373,15 @@ class Tank(pygame.sprite.Sprite):
         return True
 
     def update_values_from_server(self, x, y, tank_angle, hp, turret_angle):
+        """
+        Updates values of the tank according to the information received from the server
+        :param int x: New X coordinate of the tank's location
+        :param int y: New Y coordinate of the tank's location
+        :param float tank_angle: New tank angle
+        :param float hp: New HP
+        :param float turret_angle: New turret angle
+        :return: None
+        """
         self._x = x
         self._y = y
         self._angle = tank_angle

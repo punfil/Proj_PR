@@ -1,8 +1,10 @@
 from ctypes import *
 
 
-# Goal - receive C-like structs via socket
 class PayloadInformation(Structure):
+    """
+    Represents the information received from the server
+    """
     _fields_ = [
         ("action", c_char),
         ("type_of", c_char),

@@ -11,10 +11,10 @@ server/*.user
 *.vcxproj
 .idea/workspace.xml
 server/.vs/Prserveroj_PR_serv/v17/.suo
-Boards/__pycache__/*
+client/Boards/__pycache__/*
 
 server/a.out
-Networking/__pycache__/*
+client/Networking/__pycache__/*
 server/.vscode/settings.json
 server/.vscode/c_cpp_properties.json
 server/main

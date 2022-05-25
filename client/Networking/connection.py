@@ -1,4 +1,5 @@
 import socket
+import sys
 from ctypes import *
 from time import sleep
 
@@ -159,12 +160,14 @@ class Connection:
             r, _, _ = select.select([self._socket], [], [], 0)
             if r:
                 buff = self._socket.recv(sizeof(PayloadConfiguration))
-                payload_in = PayloadConfiguration.from_buffer_copy(buff)
-                return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
+                if buff:
+                    payload_in = PayloadConfiguration.from_buffer_copy(buff)
+                    return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
+                else:
+                    break
             sleep(0.1)
         return constants.configuration_receive_error, constants.configuration_receive_error, constants.configuration_receive_error, constants.configuration_receive_error, 0, 0, 0, 0
 
-    # Prints should be replaced with serious actions
     def process_received_information(self, received_information_arr):
         """
         Processes the information and takes action according to it
@@ -195,14 +198,14 @@ class Connection:
                                                      received_information.x_location, received_information.y_location, received_information.tank_angle,
                                                      received_information.hp)
                 else:
-                    print("Received command to update. The target was inappropriate!")
+                    print("##ERROR: Received command to update. The target was inappropriate!")
             elif received_information.action.decode('utf-8') == constants.information_disconnect:
                 self._game.remove_tank(received_information.player_id)
             elif received_information.action.decode('utf-8') == constants.information_death:
-                self._game.show_death_screen_and_exit()  # This should be changed to some screen showing you're dead
+                self._game.show_death_screen_and_exit()
                 return
             else:
-                print(f"Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")
+                print(f"ERROR: Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")
 
     @property
     def player_id(self):

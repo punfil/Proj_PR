@@ -115,6 +115,7 @@ class Game:
         if self._player_count == constants.configuration_receive_error:
             self.show_server_full_or_busy_screen_and_exit()
             return False
+        self._player_count = 1 # This variable is modified within other functions that will be used to add existing players
         self._connection.player_id = self._my_player_id
 
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
@@ -170,6 +171,7 @@ class Game:
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)
         self._tanks.append(tank)
+        self._player_count += 1
 
     def load_map(self, filename):
         """
@@ -228,7 +230,7 @@ class Game:
         """
         finished = False
         time_start = time.time()
-        dead_image = pygame.image.load("Pictures/busy_or_full.png").convert_alpha()
+        dead_image = pygame.image.load("./client/Pictures/busy_or_full.png").convert_alpha()
         self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
         while not finished:
             for ev in pygame.event.get():
@@ -247,7 +249,7 @@ class Game:
         self._connection.close_connection()
         finished = False
         time_start = time.time()
-        dead_image = pygame.image.load("Pictures/dead.png").convert_alpha()
+        dead_image = pygame.image.load("./client/Pictures/dead.png").convert_alpha()
         self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
         while not finished:
             for ev in pygame.event.get():
@@ -316,6 +318,7 @@ class Game:
         if tank is not None:
             tank.kill()
             self._tanks.remove(tank)
+            self._player_count -= 1
 
     def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle):
         """
@@ -410,7 +413,7 @@ class Game:
         delta_time = 0.0
         received = True
         while True:
-            delta_time += self._clock.tick(45) / 1000  # number of seconds passed since the last frame
+            delta_time += self._clock.tick(constants.target_fps) / 1000  # number of seconds passed since the last frame
 
             self._background_board.draw(self._screen)  # not a performance issue - only draws updated background parts
             pygame.display.set_caption("Project - Distracted Programming " + str(int(self._clock.get_fps())) + " fps")

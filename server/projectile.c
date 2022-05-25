@@ -35,7 +35,6 @@ struct projectile* get_projectile_with_id(struct singly_linked_node* head, int p
         }
         iterator = iterator->next;
     }
-    printf("Get projectile with ID NULL return\n");
     return NULL;
 }
 

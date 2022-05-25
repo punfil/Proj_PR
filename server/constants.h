@@ -48,7 +48,7 @@
 #define NO_ROTATION 0.0
 #define DEFAULT_TANK_ANGLE 0.0
 #define DEFAULT_TANK_TURRET_ANGLE 0.0
-#define TANK_COLLISION_R 25 //In pixels - Treat tank as circle when dealing with collisions
+#define TANK_COLLISION_R 10 //In pixels - Treat tank as circle when dealing with collisions
 #define TANK_PROJECTILE_COLLISION_DAMAGE 2.5
 
 //States of players for function calculate_physics

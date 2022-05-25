@@ -230,9 +230,10 @@ class Tank(pygame.sprite.Sprite):
         # If it's not mine tank
         else:
             self.rotate_not_mine()
-            self._hp_bar.update_hp(self._hp)
+
         # Update image for all tanks
         self.rect.center = (self._x, self._y)
+        self._hp_bar.update_hp(self._hp)
 
     def accelerate(self, acceleration):
         """

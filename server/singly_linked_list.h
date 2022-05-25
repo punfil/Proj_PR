@@ -7,4 +7,6 @@ struct singly_linked_node{
 };
 
 void singly_linked_list_add(struct singly_linked_node** head, void* data); 
+void* singly_linked_list_get_at(struct singly_linked_node* head, int index);
+
 #endif

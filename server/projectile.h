@@ -18,7 +18,7 @@ struct projectile* projectile_alloc();
 
 void projectile_set_values(struct projectile* self, uint32_t id, uint32_t owner_id, uint32_t x, uint32_t y, float angle, float hp);
 
-bool projectile_with_id_exists(struct singly_linked_node* head, int projectile_id);
+struct projectile* get_projectile_with_id(struct singly_linked_node* head, int projectile_id);
 
 void remove_projectile_from_list(struct singly_linked_node** head, int projectile_id);
 

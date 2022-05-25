@@ -192,7 +192,7 @@ class Connection:
                     elif received_information.action.decode('utf-8') == constants.information_update:
                         self._game.update_projectile(received_information.player_id,
                                                      int(received_information.turret_angle),
-                                                     received_information.x_location, received_information.y_location,
+                                                     received_information.x_location, received_information.y_location, received_information.tank_angle,
                                                      received_information.hp)
                 else:
                     print("Received command to update. The target was inappropriate!")

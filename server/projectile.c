@@ -26,20 +26,21 @@ void projectile_set_values(struct projectile* self, uint32_t id, uint32_t owner_
     self->hp = hp;
 }
 
-bool projectile_with_id_exists(struct singly_linked_node* head, int projectile_id){
+//Return projectile if exists or NULL if doesn't
+struct projectile* get_projectile_with_id(struct singly_linked_node* head, int projectile_id){
     struct singly_linked_node* iterator = head;
     while (iterator != NULL){
         if (((struct projectile*)iterator->data)->id == projectile_id){
-            return true;
+            return (struct projectile*)iterator->data;
         }
         iterator = iterator->next;
     }
-    return false;
+    printf("Get projectile with ID NULL return\n");
+    return NULL;
 }
 
 //This makes a very serious assumption - that this list works as FIFO
 void remove_projectile_from_list(struct singly_linked_node** head, int projectile_id){
-    printf("Received task to remove projectile ID %d\n", projectile_id);
     projectile_free((struct projectile*)(*head)->data);
     if ((*head)->next == NULL){
         free(*head);
@@ -79,15 +80,12 @@ void remove_projectile_from_list(struct singly_linked_node** head, int projectil
 
 void update_projectile_values(struct singly_linked_node* head, int projectile_id, int x_location, int y_location){
     struct singly_linked_node* iterator = head;
-    while (iterator != NULL){
-        if (((struct projectile*)iterator->data)->id == projectile_id){
-            break;
-        }
-        iterator = iterator->next;
+    struct projectile* projectile = get_projectile_with_id(head, projectile_id);
+    if (projectile!=NULL){
+        struct projectile* this_projectile = (struct projectile*)iterator->data;
+        this_projectile->x = x_location;
+        this_projectile->y = y_location;
     }
-    struct projectile* this_projectile = (struct projectile*)iterator->data;
-    this_projectile->x = x_location;
-    this_projectile->y = y_location;
 }
 
 void projectile_free(struct projectile *self){

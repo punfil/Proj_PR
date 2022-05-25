@@ -48,6 +48,6 @@ information_tank = 't'
 information_projectile = 'p'
 
 """Map editor"""
-default_map_editor_tile = "./resources/grass.json"
-map_editor_tiles = ["./resources/grass.json", "./resources/asphalt.json", "./resources/house.json"]
+default_map_editor_tile = "./client/resources/grass.json"
+map_editor_tiles = ["./client/resources/grass.json", "./client/resources/asphalt.json", "./client/resources/house.json"]
 spawn_point_rotation_angle = 22.5

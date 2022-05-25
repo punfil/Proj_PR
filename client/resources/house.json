@@ -1,5 +1,5 @@
 {
-    "texture": "./Pictures/house.png",
+    "texture": "./client/Pictures/house.png",
     "blocks_movement":  true,
     "blocks_bullets": true,
     "destructible": true,

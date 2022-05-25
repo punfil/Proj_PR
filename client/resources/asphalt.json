@@ -1,5 +1,5 @@
 {
-	"texture": "./Pictures/asphalt.png",
+	"texture": "./client/Pictures/asphalt.png",
 	"move_speed": 1,
 	"visibility": 255,
 	"blocks_movement":  false,

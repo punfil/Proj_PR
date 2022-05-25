@@ -1,5 +1,5 @@
 {
-	"texture": "./Pictures/shield.png",
+	"texture": "./client/Pictures/shield.png",
 	"hp": 2,
 	"decay": 0.2,
 	"cooldown": 5

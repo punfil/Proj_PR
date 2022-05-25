@@ -74,8 +74,11 @@ struct information* receive_single_information(int* sock);
 
 void send_info_new_player_connected(int player_id, struct tank* tank, int* player_ids);
 void send_info_player_disconnected(int player_id, int* player_ids);
+void delete_all_projectiles_player_disconnected(int player_id, struct singly_linked_node** all_projectiles, int* player_ids);
+
 void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids);
-void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids);
+void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids, bool send_to_owner);
+
 void send_info_player_death(int* csocket, int player_id);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
 
@@ -86,9 +89,10 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct singl
 struct singly_linked_node* receiver(int* csock);
 
 int calculate_physics(struct whole_world* my_configuration, int player_id);
+int check_tank_collision_with_projectile(struct tank* tank, struct projectile* projectile);
 
 // Starts the thread that accepts clients and allows to kill the server
-int main() {
+int main(){
 	pthread_t main_thread;
 	bool main_thread_running = true;
 	int result = pthread_create(&main_thread, NULL, connection_handler, (void*) &main_thread_running);
@@ -215,6 +219,33 @@ void send_info_player_disconnected(int player_id, int* player_ids){
 	}
 }
 
+//Delete all projectiles that belong to player that disconnects. Projectile values are calculated on the client side so all of them would be zombie projectiles.
+void delete_all_projectiles_player_disconnected(int player_id, struct singly_linked_node** all_projectiles, int* player_ids){
+	struct singly_linked_node* iterator = *all_projectiles;
+	//If there are no projectiles
+	if (iterator == NULL){
+		return;
+	}
+	while (iterator->next != NULL){
+		struct projectile* temp = (struct projectile*)(iterator->next->data);
+		if (temp->owner_id == player_id){
+			send_info_projectile_delete(player_id, temp->id, player_ids, false);
+			projectile_free(temp);
+			struct singly_linked_node* helper = iterator->next;
+			iterator->next = iterator->next->next;
+			free(helper);
+		}
+		iterator = iterator->next;
+	}
+	//If there's only one projectile
+	if (iterator == *all_projectiles){
+		struct projectile* temp = (struct projectile*)(iterator->data);
+		if (temp->owner_id == player_id){
+			remove_projectile_from_list(all_projectiles, temp->id);
+		}
+	}
+}
+
 //Sends info to all connected players that a projectile has been spawned
 void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
@@ -229,9 +260,9 @@ void send_info_new_projectile(int player_id, struct projectile* projectile, int*
 }
 
 //Sends info to all connected players that a projectile has to die
-void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids){
+void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids, bool send_to_owner){
 	for (int i=0;i<MAX_PLAYERS;i++){
-		if (player_ids[i] == USED_ID){ //Send to all connected players
+		if (player_ids[i] == USED_ID && ((send_to_owner == true) || (send_to_owner == false && i != owner_id))){ 
 			struct information* sending = information_alloc();
 			information_set_values(sending, UPDATE, PROJECTILE, owner_id, POSITION_NOT_REQUIRED, POSITION_NOT_REQUIRED, (float)POSITION_NOT_REQUIRED, (float)PROJECTILE_NOT_EXISTS, (float)projectile_id);
 			pthread_mutex_lock(&players_mutexes[i]);
@@ -444,9 +475,9 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct singl
 	iterator = projectiles;
 	while (iterator!=NULL){
 		struct projectile* temp = (struct projectile*)iterator->data;
+		iterator = iterator->next;
 		information_set_values(information, UPDATE, PROJECTILE, temp->owner_id, temp->x, temp->y, temp->angle, (float)PROJECTILE_EXISTS, (float)temp->id);
 		nwrite = send_payload(*csock, information, sizeof(struct information));
-		iterator = iterator->next;
 	}
 
 	information_free(information);
@@ -512,12 +543,13 @@ void* player_connection_handler(void* arg){
 	decrement_players_count(my_configuration->players_count);
 	pthread_mutex_unlock(&players_count_mutex);
 	send_info_player_disconnected(my_configuration->player_id, my_configuration->player_ids);
+	delete_all_projectiles_player_disconnected(my_configuration->player_id, my_configuration->whole_world->projectiles, my_configuration->player_ids);
 	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
 
 	return NULL;
 }
 
-//Checks the worlds' physics
+//Checks the world's physics
 int calculate_physics(struct whole_world* my_configuration, int player_id){
 	struct singly_linked_node* iterator = global_receivings[player_id];
 	struct singly_linked_node* free_help = NULL;
@@ -548,11 +580,32 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 			}
 			else if (data->type_of == PROJECTILE){
 				if (data->hp == PROJECTILE_NOT_EXISTS){ //Received that projectile should be removed from the board
-					send_info_projectile_delete(player_id, (int)data->turret_angle, my_configuration->player_ids);
+					printf("Received command to delete projectile ID: %d\n", (int)data->turret_angle);
+					send_info_projectile_delete(player_id, (int)data->turret_angle, my_configuration->player_ids, true);
 					remove_projectile_from_list(my_configuration->projectiles, (int)data->turret_angle);
 				}
 				else{ //Projectile is still alive
 					update_projectile_values(*my_configuration->projectiles, (int)data->turret_angle, data->x_location, data->y_location);
+					//Check collision of this projectile with other tanks
+					struct projectile* this_projectile = get_projectile_with_id(*my_configuration->projectiles, (int)data->turret_angle);
+					bool exit = false;
+					for (int i=0;i<MAX_PLAYERS && exit == false;i++){
+						if (this_projectile == NULL){
+							exit = true;
+							break;
+						}
+						if (my_configuration->player_ids[i] == USED_ID){
+							int this_projectile_collision = check_tank_collision_with_projectile(my_configuration->tanks[i], this_projectile);
+							if (this_projectile_collision == DEAD){
+								printf("Detected collision with projectile ID: %d\n", this_projectile->id);
+								send_info_projectile_delete(this_projectile->owner_id, this_projectile->id, my_configuration->player_ids, true);
+								pthread_mutex_lock(&players_mutexes[this_projectile->owner_id]);
+								remove_projectile_from_list(my_configuration->projectiles, this_projectile->id); //This is bad, MUST be replaced!
+								pthread_mutex_unlock(&players_mutexes[this_projectile->owner_id]);
+								exit = true;
+							}
+						}
+					}
 				}
 			}
 			else{
@@ -572,4 +625,18 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		free(free_help);
 	}
 	return return_value;
+}
+
+//Checks if projectile collides with tank. If so returns DEAD (projectile) else OK
+int check_tank_collision_with_projectile(struct tank* tank, struct projectile* projectile){
+	//We treat tank collision surface as an circle
+	if (tank->player_id != projectile->owner_id && ((projectile->x - tank->x)^2 + (projectile->y - tank->y)^2) < TANK_COLLISION_R){
+		pthread_mutex_lock(&players_mutexes[tank->player_id]);
+		tank->hp -= TANK_PROJECTILE_COLLISION_DAMAGE;
+		pthread_mutex_unlock(&players_mutexes[tank->player_id]);
+		return DEAD;
+	}
+	else{
+		return OK;
+	}
 }

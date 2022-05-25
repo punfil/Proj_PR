@@ -120,7 +120,7 @@ class Game:
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
 
         # TODO Map number - variable "map_no - done :)
-        self.load_map("save.json")
+        self.load_map("./client/save.json")
 
         # changing spawn_points coordinates from grid units to pixels
         for sp in self._spawn_points:
@@ -136,7 +136,7 @@ class Game:
         # Adding my tank. Opponents tanks will be added later
         self._tanks = []
         self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, 0.0,  # Default angle
-                             self.load_resource("resources/tank.json"))
+                             self.load_resource("./client/resources/tank.json"))
         self._tanks_sprites_group.add(self._my_tank)
         self._turrets_sprites_group.add(self._my_tank.turret)
         self._hp_bars_sprites_group.add(self._my_tank.hp_bar)
@@ -165,7 +165,7 @@ class Game:
         :param float tank_angle: Angle of the tank
         :return: None
         """
-        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource("resources/tank.json"))
+        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource("./client/resources/tank.json"))
         self._tanks_sprites_group.add(tank)
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)
@@ -345,13 +345,14 @@ class Game:
         tank = self.get_tank_with_player_id(player_id)
         tank.turret.delete_projectile(projectile_id)
 
-    def update_projectile(self, player_id, projectile_id, x_location, y_location, hp):
+    def update_projectile(self, player_id, projectile_id, x_location, y_location, projectile_angle, hp):
         """
         Updates the projectile values according to the information received from the server.
         :param int player_id: ID of the player that this projectile belongs to
         :param int projectile_id: ID of the projectile to be updated
         :param int x_location: X coordinate of the updated projectile's location
         :param int y_location: Y coordinate of the updated projectile's location
+        :param float projectile_angle: Angle of the projectile
         :param float hp: HP of the updated projectile - whether it exists or not
         :return: None
         """
@@ -359,7 +360,11 @@ class Game:
             self.remove_projectile(player_id, projectile_id)
         elif hp == constants.projectile_exists:
             tank = self.get_tank_with_player_id(player_id)
-            tank.turret.get_projectile_with_id(projectile_id).update_from_server(x_location, y_location)
+            projectile = tank.turret.get_projectile_with_id(projectile_id)
+            if projectile is None:
+                tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
+            else:
+                projectile.update_from_server(x_location, y_location)
 
     def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
         """

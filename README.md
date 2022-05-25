@@ -1,4 +1,4 @@
-# Proj_PR
+# TanksMultiplayer
 Project has been made for Distributted Programming course. <br/>
 Server has been written in C and runs on linux. <br/>
 Client requires gcc to run and valgrind to run in debug mode.<br/>

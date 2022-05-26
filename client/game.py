@@ -346,7 +346,8 @@ class Game:
         :return: None
         """
         tank = self.get_tank_with_player_id(player_id)
-        tank.turret.delete_projectile(projectile_id)
+        if tank is not None:
+            tank.turret.delete_projectile(projectile_id)
 
     def update_projectile(self, player_id, projectile_id, x_location, y_location, projectile_angle, hp):
         """

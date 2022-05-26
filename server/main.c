@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#include <math.h>
 
 //Multithreading
 #include <pthread.h>
@@ -652,7 +653,7 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 //Checks if projectile collides with tank. If so returns DEAD (projectile) else OK
 int check_tank_collision_with_projectile(struct tank* tank, struct projectile* projectile){
 	//We treat tank collision surface as an circle
-	if (tank->player_id != projectile->owner_id && ((projectile->x - tank->x)^2 + (projectile->y - tank->y)^2) < TANK_COLLISION_R){
+	if (tank->player_id != projectile->owner_id && ((projectile->x - tank->x)*(projectile->x - tank->x) + (projectile->y - tank->y)*(projectile->y - tank->y) < (TANK_COLLISION_R*TANK_COLLISION_R))){
 		return DEAD;
 	}
 	else{

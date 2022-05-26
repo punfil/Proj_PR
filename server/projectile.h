@@ -18,11 +18,11 @@ struct projectile* projectile_alloc();
 
 void projectile_set_values(struct projectile* self, uint32_t id, uint32_t owner_id, uint32_t x, uint32_t y, float angle, float hp);
 
-struct projectile* get_projectile_with_id(struct singly_linked_node* head, int projectile_id);
+struct projectile* get_projectile_with_id(struct projectile** head, int projectile_id);
 
-void remove_projectile_from_list(struct singly_linked_node** head, int projectile_id);
+void remove_projectile_from_list(struct projectile** head, int projectile_id);
 
-void update_projectile_values(struct singly_linked_node* head, int projectile_id, int x_location, int y_location);
+void update_projectile_values(struct projectile** head, int projectile_id, int x_location, int y_location);
 
 void projectile_free(struct projectile *self);
 

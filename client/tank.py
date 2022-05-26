@@ -224,7 +224,7 @@ class Tank(pygame.sprite.Sprite):
                 if self._shield_active:
                     self._shield.rect.center = self.rect.center
 
-            self._game.send_tank_position(round(self._x), round(self._y), self._angle, self._hp, self._turret.angle)
+            self._game.send_tank_position(int(self._x), int(self._y), self._angle, self._hp, self._turret.angle)
             self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
 
         # If it's not mine tank

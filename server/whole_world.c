@@ -21,7 +21,7 @@ struct whole_world* whole_world_alloc(){
     return self;
 }
 
-void whole_world_set_values(struct whole_world* self, int* players_ids, struct tank** tanks, struct singly_linked_node** projectiles_in_game){
+void whole_world_set_values(struct whole_world* self, int* players_ids, struct tank** tanks, struct projectile** projectiles_in_game){
     self->player_ids = players_ids;
     self->tanks = tanks;
     self->projectiles = projectiles_in_game;

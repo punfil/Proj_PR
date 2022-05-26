@@ -16,7 +16,7 @@ struct information* information_alloc(){
 	return self;
 }
 
-void information_set_values(struct information* self, char action, char type_of, uint32_t player_id, uint32_t x_location, uint32_t y_location, float tank_angle, float hp, float turret_angle){
+void information_set_values(struct information* self, char action, char type_of, uint32_t player_id, float x_location, float y_location, float tank_angle, float hp, float turret_angle){
 	self->action = action;
 	self->type_of = type_of;
 	self->player_id = player_id;

@@ -51,7 +51,7 @@ class Projectile(pygame.sprite.Sprite):
             self._y += dy
             self._turret.game.send_projectile_update(self._id, self._x, self._y, self._angle,
                                                      constants.projectile_exists)
-            self._x, self._y = x, y
+            #self._x, self._y = x, y
         self.rect.center = (self._x, self._y)
 
     def update_from_server(self, x, y):

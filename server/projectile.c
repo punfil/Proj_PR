@@ -17,7 +17,7 @@ struct projectile* projectile_alloc(){
     return self;
 }
 
-void projectile_set_values(struct projectile* self, uint32_t id, uint32_t owner_id, uint32_t x, uint32_t y, float angle, float hp){
+void projectile_set_values(struct projectile* self, uint32_t id, uint32_t owner_id, float x, float y, float angle, float hp){
     self->id = id;
     self->owner_id = owner_id;
     self->x = x;
@@ -36,7 +36,7 @@ void remove_projectile_from_list(struct projectile** head, int projectile_id){
     head[projectile_id] = NULL;
 }
 
-void update_projectile_values(struct projectile** head, int projectile_id, int x_location, int y_location){
+void update_projectile_values(struct projectile** head, int projectile_id, float x_location, float y_location){
     struct projectile* projectile = get_projectile_with_id(head, projectile_id);
     if (projectile!=NULL){
         projectile->x = x_location;

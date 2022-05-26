@@ -41,8 +41,8 @@
 //Tank settings
 #define DEFAULT_MAP_NUMBER 0
 #define DEFAULT_TANK_SKIN 0
-#define TANK_SPAWN_POINT_X 400
-#define TANK_SPAWN_POINT_Y 400
+#define TANK_SPAWN_POINT_X 400.0
+#define TANK_SPAWN_POINT_Y 400.0
 #define FULL_HP 10.0
 #define EMPTY_HP 0.0
 #define NO_ROTATION 0.0

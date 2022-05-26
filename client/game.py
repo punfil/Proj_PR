@@ -446,8 +446,6 @@ class Game:
             self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._hp_bars_sprites_group.clear(self._screen, self._background_board.background_surface)
 
-
-
             # Draw all the information on the screen
             self._tanks_sprites_group.draw(self._screen)
             self._turrets_sprites_group.draw(self._screen)

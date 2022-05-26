@@ -229,7 +229,7 @@ void delete_all_projectiles_player_disconnected(int player_id, struct projectile
 			pthread_mutex_lock(&players_mutexes[player_id]);
 			projectile_free(all_projectiles[i]);
 			all_projectiles[i] = NULL;
-			pthread_mutex_unlock(&players_mutexes[i]);
+			pthread_mutex_unlock(&players_mutexes[player_id]);
 		}
 	}
 }
@@ -367,7 +367,6 @@ void* connection_handler(void* arg){
 			continue;
 		}
 		
-		//Now prepare variables for the new client. Blocking this mutex is not necessary however.
 		clients[current_player_id] = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
 		if (clients[current_player_id] == NULL){
 			printf("##ERROR: Error allocating memory!\n");
@@ -385,13 +384,12 @@ void* connection_handler(void* arg){
 			printf("##ERROR: Error allocating memory!\n");
 			return NULL;
 		}
-
-		
-
+		printf("Waiting on players count\n");
 		pthread_mutex_lock(&players_count_mutex);
 		increment_players_count(&players_count);
 		pthread_mutex_unlock(&players_count_mutex);
 
+		printf("Waiting on player\n");
 		pthread_mutex_lock(&(players_mutexes[current_player_id]));
 
 		*csockets[current_player_id] = temp_socket;
@@ -515,8 +513,8 @@ void* player_connection_handler(void* arg){
 	configuration_free(configuration_to_send);
 	
 	int player_state = OK;
+	sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 	while (*(my_configuration->running) && player_state == OK){
-		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 		//Receive the information available
 		//Remember to clean every information + list element
 		//No need to use mutex - only this player can access global_receiving[player_id]
@@ -531,6 +529,7 @@ void* player_connection_handler(void* arg){
 			*(my_configuration->running) = false;
 			break;
 		}
+		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 	}
 	if (player_state == DISCONNECTED){
 		printf("###INFO: Client player ID:%d connected from %s disconnected\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
@@ -546,6 +545,8 @@ void* player_connection_handler(void* arg){
 	delete_all_projectiles_player_disconnected(my_configuration->player_id, my_configuration->whole_world->projectiles, my_configuration->player_ids);
 	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
 
+	//Make sure player mutex is unlocked
+	//pthread_mutex_unlock(&players_mutexes[i]);
 	return NULL;
 }
 

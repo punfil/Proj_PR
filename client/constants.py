@@ -3,7 +3,7 @@ bar_height = 0  # If 0 then removed
 window_height = 600
 window_width = 800
 background_scale = 50
-target_fps = 30
+target_fps = 60
 # HP BAR
 hp_bar_width = 50
 hp_bar_height = 5

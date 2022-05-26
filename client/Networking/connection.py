@@ -77,7 +77,6 @@ class Connection:
         :param float turret_angle: Angle of the tank's turret, defines the direction turret is facing
         :return: None
         """
-        print(f"Sending tank update: No: {self._send_ct} CORD: ({x_location}, {y_location})")
         self._send_ct += 1
         self.send_single_information(constants.information_update, constants.information_tank, self.player_id,
                                      x_location, y_location, tank_angle, hp, turret_angle)
@@ -183,7 +182,6 @@ class Connection:
             if received_information.action.decode('utf-8') == constants.information_update or \
                     received_information.action.decode('utf-8') == constants.information_create:
                 if received_information.type_of.decode('utf-8') == constants.information_tank:
-                    print(f"Received tank update: No:{self._received_ct} CORD: ({received_information.x_location}, {received_information.y_location})")
                     self._received_ct += 1
                     self._game.update_tank(received_information.player_id, received_information.x_location,
                                            received_information.y_location,

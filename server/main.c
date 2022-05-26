@@ -516,6 +516,7 @@ void* player_connection_handler(void* arg){
 	
 	int player_state = OK;
 	while (*(my_configuration->running) && player_state == OK){
+		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 		//Receive the information available
 		//Remember to clean every information + list element
 		//No need to use mutex - only this player can access global_receiving[player_id]
@@ -530,7 +531,6 @@ void* player_connection_handler(void* arg){
 			*(my_configuration->running) = false;
 			break;
 		}
-		sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 	}
 	if (player_state == DISCONNECTED){
 		printf("###INFO: Client player ID:%d connected from %s disconnected\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));

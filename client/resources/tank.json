@@ -3,7 +3,7 @@
 	"turret": "./client/resources/turret.json",
 	"shield": "./client/resources/shield.json",
 	"hp": 10,
-	"max_speed": 100,
+	"max_speed": 150,
 	"acceleration": 150,
 	"deceleration": 150,
 	"drag": 200,

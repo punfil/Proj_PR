@@ -411,7 +411,7 @@ class Game:
         """
         self._background_board.draw(self._screen, draw_all=True)
         delta_time = 0.0
-        received = True
+        received = False
         while True:
             delta_time += self._clock.tick(constants.target_fps) / 1000  # number of seconds passed since the last frame
 
@@ -421,6 +421,12 @@ class Game:
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
                     self.exit_game(True)
+
+            # Receive processed information
+            received_information_arr = self._connection.receive_all_information()
+            if len(received_information_arr) > 0:
+                received = True
+                self._connection.process_received_information(received_information_arr)
 
             keys = pygame.key.get_pressed()
             self._my_tank.keyboard_input(keys)
@@ -439,11 +445,7 @@ class Game:
             self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._hp_bars_sprites_group.clear(self._screen, self._background_board.background_surface)
 
-            # Receive processed information
-            received_information_arr = self._connection.receive_all_information()
-            if len(received_information_arr) > 0:
-                received = True
-                self._connection.process_received_information(received_information_arr)
+
 
             # Draw all the information on the screen
             self._tanks_sprites_group.draw(self._screen)

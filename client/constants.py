@@ -32,7 +32,7 @@ projectile_not_exists = 0
 
 """Networking variables"""""
 game_port = 2137
-default_game_server_ip = "192.168.0.21"
+default_game_server_ip = "192.168.135.125"
 configuration_receive_timeout = 1
 configuration_receive_error = -1
 socket_timeout = 100.00

@@ -3,7 +3,6 @@
     "blocks_movement":  true,
     "blocks_bullets": true,
     "destructible": true,
-    "move_speed": 0.3,
     "hp": 1,
     "spawn_tile_on_death": "grass.json"
 }

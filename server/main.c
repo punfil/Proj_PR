@@ -383,12 +383,10 @@ void* connection_handler(void* arg){
 			printf("##ERROR: Error allocating memory!\n");
 			return NULL;
 		}
-		printf("Waiting on players count\n");
 		pthread_mutex_lock(&players_count_mutex);
 		increment_players_count(&players_count);
 		pthread_mutex_unlock(&players_count_mutex);
 
-		printf("Waiting on player\n");
 		pthread_mutex_lock(&(players_mutexes[current_player_id]));
 
 		*csockets[current_player_id] = temp_socket;

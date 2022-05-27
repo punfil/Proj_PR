@@ -181,7 +181,7 @@ struct information* receive_single_information(int *sock){
 	char buff[RECEIVER_BUFFER_SIZE];
 	bzero(buff, RECEIVER_BUFFER_SIZE);
 	int available;
-	int nread=read(*sock, buff, RECEIVER_BUFFER_SIZE); //Debug to check if it doesn't wait forever
+	int nread=read(*sock, buff, RECEIVER_BUFFER_SIZE);
 	if (nread <=0){
 		return NULL; //Didn't receive any information
 	}
@@ -191,7 +191,6 @@ struct information* receive_single_information(int *sock){
 	}
 	struct information* received = (struct information*) buff;
 	memcpy(returning, received, sizeof(struct information));
-	//information_set_values(returning, received->action, received->type_of, received->player_id, received->x_location, received->y_location, received->tank_angle, received->hp, received->turret_angle);
 	return returning;
 }
 
@@ -449,8 +448,10 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct proje
 	int nwrite = 0;
 
 	//Check if there are any global updates - global_sendings
+	pthread_mutex_lock(&players_mutexes[player_id]);
 	struct singly_linked_node* iterator = global_sendings[player_id];
 	global_sendings[player_id] = NULL;
+	pthread_mutex_unlock(&players_mutexes[player_id]);
 	struct singly_linked_node* free_helper = NULL;
 	while (iterator != NULL){
 		nwrite = send_payload(*csock, (void *)iterator->data, sizeof(struct information));
@@ -541,12 +542,9 @@ void* player_connection_handler(void* arg){
 	pthread_mutex_lock(&players_count_mutex);
 	decrement_players_count(my_configuration->players_count);
 	pthread_mutex_unlock(&players_count_mutex);
-	send_info_player_disconnected(my_configuration->player_id, my_configuration->player_ids);
 	delete_all_projectiles_player_disconnected(my_configuration->player_id, my_configuration->whole_world->projectiles, my_configuration->player_ids);
+	send_info_player_disconnected(my_configuration->player_id, my_configuration->player_ids);
 	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
-
-	//Make sure player mutex is unlocked
-	//pthread_mutex_unlock(&players_mutexes[i]);
 	return NULL;
 }
 

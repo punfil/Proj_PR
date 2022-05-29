@@ -79,7 +79,7 @@ void send_info_player_disconnected(int player_id, int* player_ids);
 void delete_all_projectiles_player_disconnected(int player_id, struct projectile** all_projectiles, int* player_ids);
 
 void send_info_new_projectile(int player_id, struct projectile* projectile, int* player_ids);
-void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids, bool send_to_owner);
+void send_info_projectile_delete(struct projectile* projectile, int* player_ids, bool send_to_owner);
 
 void send_info_player_death(int* csocket, int player_id);
 void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct tank* tank, int player_id, int* players_ids);
@@ -224,7 +224,7 @@ void send_info_player_disconnected(int player_id, int* player_ids){
 void delete_all_projectiles_player_disconnected(int player_id, struct projectile** all_projectiles, int* player_ids){
 	for (int i=player_id*MAX_PROJECTILES_PER_PLAYER;i<(player_id+1)*MAX_PROJECTILES_PER_PLAYER;i++){
 		if (all_projectiles[i]!= NULL){
-			send_info_projectile_delete(player_id, all_projectiles[i]->id, player_ids, false);
+			send_info_projectile_delete(all_projectiles[i], player_ids, false);
 			pthread_mutex_lock(&players_mutexes[player_id]);
 			projectile_free(all_projectiles[i]);
 			all_projectiles[i] = NULL;
@@ -247,11 +247,11 @@ void send_info_new_projectile(int player_id, struct projectile* projectile, int*
 }
 
 //Sends info to all connected players that a projectile has to die
-void send_info_projectile_delete(int owner_id, int projectile_id, int* player_ids, bool send_to_owner){
+void send_info_projectile_delete(struct projectile* projectile, int* player_ids, bool send_to_owner){
 	for (int i=0;i<MAX_PLAYERS;i++){
-		if (player_ids[i] == USED_ID && ((send_to_owner == true) || (send_to_owner == false && i != owner_id))){ 
+		if (player_ids[i] == USED_ID && ((send_to_owner == true) || (send_to_owner == false && i != projectile->owner_id))){ 
 			struct information* sending = information_alloc();
-			information_set_values(sending, UPDATE, PROJECTILE, owner_id, POSITION_NOT_REQUIRED, POSITION_NOT_REQUIRED, (float)POSITION_NOT_REQUIRED, (float)PROJECTILE_NOT_EXISTS, (float)projectile_id);
+			information_set_values(sending, UPDATE, PROJECTILE, projectile->owner_id, projectile->x, projectile->y, (float)POSITION_NOT_REQUIRED, (float)PROJECTILE_NOT_EXISTS, (float)projectile->id);
 			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
 			pthread_mutex_unlock(&players_mutexes[i]);
@@ -581,7 +581,8 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 			}
 			else if (data->type_of == PROJECTILE){
 				if (data->hp == PROJECTILE_NOT_EXISTS){ //Received that projectile should be removed from the board
-					send_info_projectile_delete(player_id, (int)data->turret_angle, my_configuration->player_ids, true);
+					struct projectile* this_projectile = get_projectile_with_id(my_configuration->projectiles, (int)data->turret_angle);
+					send_info_projectile_delete(this_projectile, my_configuration->player_ids, true);
 					pthread_mutex_lock(&players_mutexes[player_id]);
 					remove_projectile_from_list(my_configuration->projectiles, (int)data->turret_angle);
 					pthread_mutex_unlock(&players_mutexes[player_id]);
@@ -604,7 +605,7 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 								my_configuration->tanks[i]->hp -= TANK_PROJECTILE_COLLISION_DAMAGE;
 								pthread_mutex_unlock(&players_mutexes[i]);
 
-								send_info_projectile_delete(this_projectile->owner_id, this_projectile->id, my_configuration->player_ids, true);
+								send_info_projectile_delete(this_projectile, my_configuration->player_ids, true);
 
 								pthread_mutex_lock(&players_mutexes[i]);
 								remove_projectile_from_list(my_configuration->projectiles, this_projectile->id); //This is bad, MUST be replaced!

@@ -10,6 +10,6 @@
 		"./client/Pictures/explosions/explosion/e8.png",
 		"./client/Pictures/explosions/explosion/e9.png"
 	],
-	"inherit_angle": true,
+	"inherit_angle": false,
 	"lifetime": 0.5
 }

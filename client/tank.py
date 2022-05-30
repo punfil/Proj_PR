@@ -349,7 +349,7 @@ class Tank(pygame.sprite.Sprite):
     def check_y_move(self, value):
         """
         Checks if the tank can move to position (x, y+value)
-        :param int value: Value how many tiles wants to move in Y-axis
+        :param float value: Value how many tiles wants to move in Y-axis
         :return: If it's possible to move so
         :rtype: bool
         """
@@ -362,7 +362,7 @@ class Tank(pygame.sprite.Sprite):
     def check_x_move(self, value):
         """
         Checks if the tank can move to position (x+value, y)
-        :param int value: Value how many tiles wants to move in Y-axis
+        :param float value: Value how many tiles wants to move in Y-axis
         :return: If it's possible to move so
         :rtype: bool
         """
@@ -396,10 +396,6 @@ class Tank(pygame.sprite.Sprite):
     @property
     def player_no(self):
         return self._player_no
-
-    @property
-    def turret(self):
-        return self._turret
 
     @property
     def hp_bar(self):

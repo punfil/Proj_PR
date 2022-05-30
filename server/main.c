@@ -59,6 +59,7 @@
 //Global variables
 pthread_mutex_t players_mutexes[MAX_PLAYERS];
 pthread_mutex_t players_count_mutex;
+uint32_t map_number;
 
 struct singly_linked_node* global_receivings[MAX_PLAYERS];
 struct singly_linked_node* global_sendings[MAX_PLAYERS];
@@ -94,7 +95,27 @@ int calculate_physics(struct whole_world* my_configuration, int player_id);
 int check_tank_collision_with_projectile(struct tank* tank, struct projectile* projectile);
 
 // Starts the thread that accepts clients and allows to kill the server
-int main(){
+int main(int argc, char* argv[]){
+	if (argc == 1) {
+		printf("No map number chosen - using default - %i\n", DEFAULT_MAP_NUMBER);
+		map_number = DEFAULT_MAP_NUMBER;
+	} else if (argc == 2) {
+		char *p;
+
+		long conv = strtol(argv[1], &p, 10);
+
+		if (*p != '\0' || conv < 0) {
+			printf("Incorrect map number - using default - %i\n", DEFAULT_MAP_NUMBER);
+			map_number = DEFAULT_MAP_NUMBER;
+		} else {
+			printf("Chosen map number - %i\n", conv);
+			map_number = conv;
+		}
+	} else {
+		printf("Unexpected arguments - using default map number - %i\n", DEFAULT_MAP_NUMBER);
+		map_number = DEFAULT_MAP_NUMBER;
+	}
+
 	pthread_t main_thread;
 	bool main_thread_running = true;
 	int result = pthread_create(&main_thread, NULL, connection_handler, (void*) &main_thread_running);
@@ -502,7 +523,7 @@ void* player_connection_handler(void* arg){
 	
 	//Send configuration to the new client
 	struct configuration* configuration_to_send = configuration_alloc();
-	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_MAP_NUMBER);
+	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, map_number);
 
 	tank_set_values(my_configuration->tank, my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, NO_ROTATION, FULL_HP, NO_ROTATION, DEFAULT_TANK_SKIN);
 

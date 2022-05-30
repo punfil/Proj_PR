@@ -44,7 +44,7 @@ class MapEditor(Game):
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
         self.fill_board(constants.default_map_editor_tile)
 
-        self._cursor_image = pygame.image.load("Pictures/editor_cursor.png")
+        self._cursor_image = pygame.image.load("client/Pictures/editor_cursor.png")
         cursor_names = ["normal", "x_symmetry", "y_symmetry", "point_symmetry"]
         self._cursors = {}
         self._cursors_sprites_group = pygame.sprite.Group()
@@ -55,7 +55,7 @@ class MapEditor(Game):
             self._cursors[cursor_names[i]] = cursor
             self._cursors_sprites_group.add(cursor)
 
-        self._spawn_point_image = pygame.image.load("Pictures/spawn_point.png")
+        self._spawn_point_image = pygame.image.load("client/Pictures/spawn_point.png")
         self._spawn_points = []
         self._spawn_points_sprites_group = pygame.sprite.Group()
 

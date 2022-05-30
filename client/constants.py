@@ -52,3 +52,10 @@ information_projectile = 'p'
 default_map_editor_tile = "./client/resources/grass.json"
 map_editor_tiles = ["./client/resources/grass.json", "./client/resources/asphalt.json", "./client/resources/house.json"]
 spawn_point_rotation_angle = 22.5
+maps = {
+    0: "./client/maps/tank_prix.json",
+    1: "./client/maps/city.json",
+    2: "./client/maps/all_your_base_are_belong_to_us.json",
+    3: "./client/maps/flower.json",
+    2137: "./client/maps/2137.json"
+}

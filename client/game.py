@@ -11,6 +11,8 @@ import sys
 import constants
 import json
 
+import numpy as np
+
 
 class Game:
     """
@@ -236,6 +238,20 @@ class Game:
         """
         return int(x / self._background_scale), int(y / self._background_scale)
 
+    def surface_to_grayscale(self, surface: pygame.Surface):
+        """
+        Changes the given surface colors to grayscale
+            - from https://stackoverflow.com/questions/10261440/how-can-i-make-a-greyscale-copy-of-a-surface-in-pygame
+        :param surface: surface to be grayscaled
+        :return: grayscaled surface
+        :rtype: pygame.Surface
+        """
+        arr = pygame.surfarray.pixels3d(surface)
+        mean_arr = np.dot(arr[:, :, :], [0.216, 0.587, 0.144])
+        mean_arr3d = mean_arr[..., np.newaxis]
+        new_arr = np.repeat(mean_arr3d[:, :, :], 3, axis=2)
+        return pygame.surfarray.make_surface(new_arr)
+
     def show_server_full_or_busy_screen_and_exit(self):
         """
         Display the screen that the server is full or busy at the moment and exits the game
@@ -263,6 +279,7 @@ class Game:
         finished = False
         time_start = time.time()
         dead_image = pygame.image.load("./client/Pictures/dead.png").convert_alpha()
+        self._screen.blit(self.surface_to_grayscale(self._screen), (0, 0))
         self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
         while not finished:
             for ev in pygame.event.get():

@@ -512,7 +512,6 @@ void* player_connection_handler(void* arg){
 	configuration_free(configuration_to_send);
 	
 	int player_state = OK;
-	sender(my_configuration->csocket, my_configuration->player_id, my_configuration->whole_world->tanks, my_configuration->whole_world->projectiles, my_configuration->whole_world->player_ids);
 	while (*(my_configuration->running) && player_state == OK){
 		//Receive the information available
 		//Remember to clean every information + list element

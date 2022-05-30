@@ -93,7 +93,7 @@ class Game:
         self._clock = pygame.time.Clock()
 
         self._menu = pygame_menu.Menu("Tank simulator", constants.window_width, constants.window_height,
-                                      theme=pygame_menu.themes.THEME_DARK);
+                                      theme=pygame_menu.themes.THEME_DARK)
         self._menu.add.text_input('Server IP Address :', default=constants.default_game_server_ip,
                                   onchange=self.change_server_ip)
         self._menu.add.button("Play", self.quit_menu)
@@ -129,6 +129,8 @@ class Game:
         for sp in self._spawn_points:
             sp[0] = sp[0] * self._background_scale + self._background_scale / 2
             sp[1] = sp[1] * self._background_scale + self._background_scale / 2
+        my_spawn_point = self._spawn_points[self._my_player_id % len(self._spawn_points)]
+        tank_spawn_x, tank_spawn_y, tank_spawn_angle = my_spawn_point[0], my_spawn_point[1], my_spawn_point[2]
 
         # todo - I want to somehow merge all these different sprite groups into one big group with different layers.
         self._tanks_sprites_group = pygame.sprite.Group()
@@ -139,8 +141,12 @@ class Game:
 
         # Adding my tank. Opponents tanks will be added later
         self._tanks = []
-        self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, 0.0,  # Default angle
+        self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, tank_spawn_angle,
                              self.load_resource("./client/resources/tank.json"))
+        self.send_tank_position(self._my_tank.x, self._my_tank.y, self._my_tank.angle,
+                                self._my_tank.hp, self._my_tank.turret.angle)
+        # sending the correct tank position (determined from spawn point) to the server
+
         self._tanks_sprites_group.add(self._my_tank)
         self._turrets_sprites_group.add(self._my_tank.turret)
         self._hp_bars_sprites_group.add(self._my_tank.hp_bar)

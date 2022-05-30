@@ -124,7 +124,6 @@ class Game:
 
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
 
-        print("chosen map -", map_no, '-', constants.maps[map_no])
         self.load_map(constants.maps[map_no])
 
         # changing spawn_points coordinates from grid units to pixels

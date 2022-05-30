@@ -59,7 +59,6 @@
 //Global variables
 pthread_mutex_t players_mutexes[MAX_PLAYERS];
 pthread_mutex_t players_count_mutex;
-uint32_t map_number;
 
 struct singly_linked_node* global_receivings[MAX_PLAYERS];
 struct singly_linked_node* global_sendings[MAX_PLAYERS];
@@ -96,29 +95,28 @@ int check_tank_collision_with_projectile(struct tank* tank, struct projectile* p
 
 // Starts the thread that accepts clients and allows to kill the server
 int main(int argc, char* argv[]){
+	int map_number = DEFAULT_MAP_NUMBER;
 	if (argc == 1) {
-		printf("No map number chosen - using default - %i\n", DEFAULT_MAP_NUMBER);
-		map_number = DEFAULT_MAP_NUMBER;
-	} else if (argc == 2) {
+		printf("##ERROR: No map number chosen - using default - %i\n", DEFAULT_MAP_NUMBER);
+	} 
+	else if (argc == 2) {
 		char *p;
 
 		long conv = strtol(argv[1], &p, 10);
 
 		if (*p != '\0' || conv < 0) {
-			printf("Incorrect map number - using default - %i\n", DEFAULT_MAP_NUMBER);
-			map_number = DEFAULT_MAP_NUMBER;
-		} else {
-			printf("Chosen map number - %i\n", conv);
+			printf("##ERROR: Incorrect map number - using default - %i\n", DEFAULT_MAP_NUMBER);
+		} 
+		else {
 			map_number = conv;
+			printf("###INFO: Chosen map number - %d\n", map_number);
 		}
-	} else {
-		printf("Unexpected arguments - using default map number - %i\n", DEFAULT_MAP_NUMBER);
-		map_number = DEFAULT_MAP_NUMBER;
 	}
 
 	pthread_t main_thread;
-	bool main_thread_running = true;
-	int result = pthread_create(&main_thread, NULL, connection_handler, (void*) &main_thread_running);
+	struct for_connection_handler_thread* main_thread_config = for_connection_handler_thread_alloc();
+	for_connection_handler_thread_set_values(main_thread_config, map_number);
+	int result = pthread_create(&main_thread, NULL, connection_handler, (void*) main_thread_config);
 	if (result!=0){
 			printf("##ERROR: Failed to create thread\n");
 	}
@@ -130,7 +128,7 @@ int main(int argc, char* argv[]){
 		}
 	}
 	printf("###INFO: Exiting the main thread!\n");
-	main_thread_running = false;
+	*main_thread_config->running = false;
 	pthread_join(main_thread, NULL);
 	return 0;
 }
@@ -300,7 +298,7 @@ void clean_up_after_disconnect(int* csocket, struct sockaddr_in* client, struct 
 
 //Accepts connections and creates new threads - one for each client
 void* connection_handler(void* arg){
-	bool* running = (bool*) arg;
+	struct for_connection_handler_thread* my_config = (struct for_connection_handler_thread*) arg;
 
 	initialize_mutexes();
 	initialize_global_arrays();
@@ -355,7 +353,7 @@ void* connection_handler(void* arg){
 	pthread_t clients_threads[MAX_PLAYERS];
 
 	struct whole_world* world = whole_world_alloc();
-	whole_world_set_values(world, player_ids, tanks_in_game, projectiles_in_game);
+	whole_world_set_values(world, player_ids, tanks_in_game, projectiles_in_game, my_config->map_number);
 
 	int customer_size = sizeof(struct sockaddr_in);
 	int main_socket = create_socket(PORT);
@@ -368,7 +366,7 @@ void* connection_handler(void* arg){
 	tv.tv_sec = CLIENT_MOVE_WAIT_SEC;
     tv.tv_usec = CLIENT_MOVE_WAIT_USEC;
 	int one = 1;
-	while (*running){
+	while (*my_config->running){
 		temp_socket = accept(main_socket, (struct sockaddr*) &temp_information, &customer_size);
 
 		//Check if connection succeeded
@@ -453,6 +451,8 @@ void* connection_handler(void* arg){
 	destroy_mutexes();
 
 	close_socket(main_socket);
+
+	for_connection_handler_thread_free(my_config);
 	
 	return NULL;	
 }
@@ -523,7 +523,7 @@ void* player_connection_handler(void* arg){
 	
 	//Send configuration to the new client
 	struct configuration* configuration_to_send = configuration_alloc();
-	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, map_number);
+	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, my_configuration->whole_world->map_number);
 
 	tank_set_values(my_configuration->tank, my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, NO_ROTATION, FULL_HP, NO_ROTATION, DEFAULT_TANK_SKIN);
 

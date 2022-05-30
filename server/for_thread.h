@@ -34,4 +34,15 @@ void for_thread_set_values(struct for_thread* self, int player_id, struct tank* 
 
 void for_thread_free(struct for_thread* self);
 
+struct for_connection_handler_thread{
+    int map_number;
+    bool* running;
+};
+
+struct for_connection_handler_thread* for_connection_handler_thread_alloc();
+
+void for_connection_handler_thread_set_values(struct for_connection_handler_thread* self, int map_number);
+
+void for_connection_handler_thread_free(struct for_connection_handler_thread* self);
+
 #endif

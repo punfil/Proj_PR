@@ -21,10 +21,11 @@ struct whole_world* whole_world_alloc(){
     return self;
 }
 
-void whole_world_set_values(struct whole_world* self, int* players_ids, struct tank** tanks, struct projectile** projectiles_in_game){
-    self->player_ids = players_ids;
+void whole_world_set_values(struct whole_world* self, int* player_ids, struct tank** tanks, struct projectile** projectiles_in_game, int map_number){
+    self->player_ids = player_ids;
     self->tanks = tanks;
     self->projectiles = projectiles_in_game;
+    self->map_number = map_number;
 }
 
 void whole_world_free(struct whole_world* self){

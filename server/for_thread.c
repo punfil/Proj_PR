@@ -39,3 +39,24 @@ void for_thread_free(struct for_thread* self){
     free(self->running);
     free(self);
 }
+
+struct for_connection_handler_thread* for_connection_handler_thread_alloc(){
+    struct for_connection_handler_thread* self;
+    self = (struct for_connection_handler_thread*)malloc(sizeof(struct for_connection_handler_thread));
+    self->running = (bool*)malloc(sizeof(bool));
+    if (self == NULL){
+        return NULL;
+    }
+    memset(self, 0, sizeof(struct for_connection_handler_thread*));
+    return self;
+}
+
+void for_connection_handler_thread_set_values(struct for_connection_handler_thread* self, int map_number){
+    *self->running = true;
+    self->map_number = map_number;
+}
+
+void for_connection_handler_thread_free(struct for_connection_handler_thread* self){
+    free(self->running);
+    free(self);
+}

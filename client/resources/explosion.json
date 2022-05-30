@@ -1,0 +1,15 @@
+{
+	"animation_frames": [
+		"./client/Pictures/explosions/explosion/e1.png",
+		"./client/Pictures/explosions/explosion/e2.png",
+		"./client/Pictures/explosions/explosion/e3.png",
+		"./client/Pictures/explosions/explosion/e4.png",
+		"./client/Pictures/explosions/explosion/e5.png",
+		"./client/Pictures/explosions/explosion/e6.png",
+		"./client/Pictures/explosions/explosion/e7.png",
+		"./client/Pictures/explosions/explosion/e8.png",
+		"./client/Pictures/explosions/explosion/e9.png"
+	],
+	"inherit_angle": true,
+	"lifetime": 0.5
+}

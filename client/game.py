@@ -5,6 +5,7 @@ import pygame_menu.themes
 from Boards.background_board import BackgroundBoard
 from Networking.connection import Connection
 from tank import Tank
+from explosion import Explosion
 import pygame
 import sys
 import constants
@@ -38,6 +39,7 @@ class Game:
         self._tanks_sprites_group = None
         self._turrets_sprites_group = None
         self._projectiles_sprites_group = None
+        self._explosions_sprites_group = None
         self._hp_bars_sprites_group = None
 
         # Background - here are objects to be displayed. Only int sizes are allowed
@@ -132,6 +134,7 @@ class Game:
         self._tanks_sprites_group = pygame.sprite.Group()
         self._turrets_sprites_group = pygame.sprite.Group()
         self._projectiles_sprites_group = pygame.sprite.Group()
+        self._explosions_sprites_group = pygame.sprite.Group()
         self._hp_bars_sprites_group = pygame.sprite.Group()
 
         # Adding my tank. Opponents tanks will be added later
@@ -198,7 +201,11 @@ class Game:
             return resource
         with open(filename, 'r') as file:
             resource = json.load(file)
-        resource["texture"] = pygame.image.load(resource["texture"])
+        if resource.get("texture"):
+            resource["texture"] = pygame.image.load(resource["texture"])
+        if resource.get("animation_frames"):
+            for i, img_path in enumerate(resource["animation_frames"]):
+                resource["animation_frames"][i] = pygame.image.load(img_path)
         resource["resource_name"] = filename
         self._resources[filename] = resource
         return resource
@@ -360,11 +367,13 @@ class Game:
         :param float hp: HP of the updated projectile - whether it exists or not
         :return: None
         """
+        tank = self.get_tank_with_player_id(player_id)
+        projectile = tank.turret.get_projectile_with_id(projectile_id)
         if hp == constants.projectile_not_exists:
+            self._explosions_sprites_group.add(Explosion(projectile.x, projectile.y,
+                                                         projectile.angle, projectile.explosion))
             self.remove_projectile(player_id, projectile_id)
         elif hp == constants.projectile_exists:
-            tank = self.get_tank_with_player_id(player_id)
-            projectile = tank.turret.get_projectile_with_id(projectile_id)
             if projectile is None:
                 tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
             else:
@@ -437,6 +446,7 @@ class Game:
                 self._tanks_sprites_group.update(delta_time)
                 self._turrets_sprites_group.update(delta_time)
                 self._projectiles_sprites_group.update(delta_time)
+                self._explosions_sprites_group.update(delta_time)
                 self._hp_bars_sprites_group.update()
                 delta_time = 0.0
                 received = False
@@ -444,12 +454,14 @@ class Game:
             self._tanks_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._turrets_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._projectiles_sprites_group.clear(self._screen, self._background_board.background_surface)
+            self._explosions_sprites_group.clear(self._screen, self._background_board.background_surface)
             self._hp_bars_sprites_group.clear(self._screen, self._background_board.background_surface)
 
             # Draw all the information on the screen
             self._tanks_sprites_group.draw(self._screen)
             self._turrets_sprites_group.draw(self._screen)
             self._projectiles_sprites_group.draw(self._screen)
+            self._explosions_sprites_group.draw(self._screen)
             self._hp_bars_sprites_group.draw(self._screen)
 
             pygame.display.flip()

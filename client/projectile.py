@@ -24,6 +24,7 @@ class Projectile(pygame.sprite.Sprite):
         self._speed = attributes["speed"]
         self._damage = attributes["damage"]
         self._lifetime = attributes["lifetime"]
+        self._explosion = self._owner._game.load_resource(attributes["explosion"])
 
         self.image = attributes["texture"]
         self.image = pygame.transform.rotozoom(self.image, self._angle, 1)
@@ -102,8 +103,8 @@ class Projectile(pygame.sprite.Sprite):
         return self._angle
 
     @property
-    def hp(self):
-        return self._
+    def explosion(self):
+        return self._explosion
 
     @property
     def id(self):

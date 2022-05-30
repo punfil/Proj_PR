@@ -2,5 +2,6 @@
 	"texture": "./client/Pictures/projectile.png",
 	"speed": 500,
 	"damage": 5,
-	"lifetime": 2
+	"lifetime": 2,
+	"explosion": "./client/resources/explosion.json"
 }

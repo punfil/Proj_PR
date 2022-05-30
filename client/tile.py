@@ -18,7 +18,7 @@ class Tile:
         :return: Value of the attribute
         :rtype: float
         """
-        return self._attributes.get(attribute_name)
+        return self._attributes[attribute_name]  # todo maybe replace with self._attributes.get(attribute_name)
 
     def set_attribute(self, attribute_name, new_value):
         """

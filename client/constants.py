@@ -35,7 +35,7 @@ game_port = 2137
 default_game_server_ip = "192.168.135.125"
 configuration_receive_timeout = 1
 configuration_receive_error = -1
-socket_timeout = 500.00
+socket_timeout = 100.00
 full_server = -99
 
 """For information.action"""

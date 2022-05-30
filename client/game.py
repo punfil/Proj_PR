@@ -3,7 +3,6 @@ import time
 import pygame_menu.themes
 
 from Boards.background_board import BackgroundBoard
-from client.tile import Tile
 from Networking.connection import Connection
 from tank import Tank
 import pygame
@@ -363,12 +362,6 @@ class Game:
         """
         if hp == constants.projectile_not_exists:
             self.remove_projectile(player_id, projectile_id)
-            if 0 <= x_location <= self._width and 0 <= y_location <= self._height:
-                new_tile_path = self.get_tile_at_screen_position(x_location, y_location).get_attribute("spawn_tile_on_death")
-                if new_tile_path:
-                    x, y = self.screen_position_to_grid_position(x_location, y_location)
-                    new_tile = Tile(x, y, self.load_resource(new_tile_path))
-                    self._background_board.set_tile(x, y, new_tile)
         elif hp == constants.projectile_exists:
             tank = self.get_tank_with_player_id(player_id)
             projectile = tank.turret.get_projectile_with_id(projectile_id)

@@ -140,9 +140,14 @@ class Connection:
         while quit is False:
             r, _, _ = select.select([self._socket], [], [], 0)
             if r:
-                buff = self._socket.recv(sizeof(PayloadInformation))
+                buff = None
+                try:
+                    buff = self._socket.recv(sizeof(PayloadInformation))
+                except ConnectionResetError as e:
+                    self._game.show_server_full_or_busy_screen_and_exit()
                 if len(buff) < 28:
                     print("##DEBUG Error - received less bytes than expected!")
+                    self._game.show_server_full_or_busy_screen_and_exit()
                     return receivings
                 payload_in: PayloadInformation = PayloadInformation.from_buffer_copy(buff)
                 receivings.append(payload_in)

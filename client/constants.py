@@ -37,6 +37,7 @@ configuration_receive_timeout = 1
 configuration_receive_error = -1
 socket_timeout = 100.00
 full_server = -99
+default_cache_save_file = "game_cookies.txt"
 
 """For information.action"""
 information_update = 'u'

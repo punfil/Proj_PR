@@ -21,6 +21,7 @@ class Game:
         _screen: Screen the game is displayed at
         ...other
     """
+
     def __init__(self):
         self._screen = None
         self._resources = {}  # loaded jsons of game resources (tiles, tanks, projectiles, etc)
@@ -53,6 +54,34 @@ class Game:
         self._clock = None
         self._menu = None
         self._in_menu = True
+
+    @staticmethod
+    def load_default_ip() -> str:
+        """
+        Loads last used server IP from text file from constants.default_cache_save_file
+        :return: Loaded server IP or None if file didn't exist\
+        :rtype: str
+        """
+        return_ip = None
+        try:
+            with open(constants.default_cache_save_file, "r") as f:
+                return_ip = f.read()
+        except FileNotFoundError:
+            pass
+        return return_ip
+
+    @staticmethod
+    def save_default_ip(ip: str) -> None:
+        """
+        Function that saves IP used in this game to file for later use
+        :param ip: IP to be saved
+        :return: None
+        """
+        try:
+            with open(constants.default_cache_save_file, "w") as f:
+                f.write(ip)
+        except FileExistsError:
+            pass
 
     def quit_menu(self):
         """
@@ -94,9 +123,13 @@ class Game:
         self._screen = pygame.display.set_mode((self._width, self._height + constants.bar_height))
         self._clock = pygame.time.Clock()
 
+        self._server_address = self.load_default_ip()
+        if self._server_address is None:
+            self._server_address = constants.default_game_server_ip
+
         self._menu = pygame_menu.Menu("Tank simulator", constants.window_width, constants.window_height,
                                       theme=pygame_menu.themes.THEME_DARK)
-        self._menu.add.text_input('Server IP Address :', default=constants.default_game_server_ip,
+        self._menu.add.text_input('Server IP Address :', default=self._server_address,
                                   onchange=self.change_server_ip)
         self._menu.add.button("Play", self.quit_menu)
 
@@ -119,7 +152,7 @@ class Game:
         if self._player_count == constants.configuration_receive_error:
             self.show_server_full_or_busy_screen_and_exit()
             return False
-        self._player_count = 1 # This variable is modified within other functions that will be used to add existing players
+        self._player_count = 1  # This variable is modified within other functions that will be used to add existing players
         self._connection.player_id = self._my_player_id
 
         self._background_board = BackgroundBoard(self, self._width, self._height, self._background_scale)
@@ -267,7 +300,7 @@ class Game:
             pygame.display.flip()
             if time.time() - time_start > constants.server_full_or_busy_screen_display_time_sec:
                 finished = True
-        sys.exit(0)
+        self.exit_game(False)
 
     def show_death_screen_and_exit(self):
         """
@@ -287,7 +320,7 @@ class Game:
             pygame.display.flip()
             if time.time() - time_start > constants.death_screen_display_time_sec:
                 finished = True
-        sys.exit(0)
+        self.exit_game(False)
 
     def exit_game(self, should_close_connection):
         """
@@ -297,6 +330,7 @@ class Game:
         """
         if should_close_connection:
             self._connection.close_connection()
+        self.save_default_ip(self._server_address)
         sys.exit(0)
 
     def add_projectile(self, projectile):

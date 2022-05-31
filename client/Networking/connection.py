@@ -122,7 +122,11 @@ class Connection:
         payload_out = PayloadInformation(action.encode('utf-8'), type_of.encode('utf-8'), player_id, x_location,
                                          y_location, tank_angle, hp,
                                          turret_angle)
-        nsent = self._socket.send(payload_out)
+        nsent = None
+        try:
+            nsent = self._socket.send(payload_out)
+        except ConnectionResetError as e:
+            self._game.show_server_full_or_busy_screen_and_exit()
         if nsent:
             return True
         return False
@@ -164,7 +168,11 @@ class Connection:
         for i in range(5):  # Five tries to connect - ~5seconds
             r, _, _ = select.select([self._socket], [], [], 0)
             if r:
-                buff = self._socket.recv(sizeof(PayloadConfiguration))
+                buff = None
+                try:
+                    buff = self._socket.recv(sizeof(PayloadConfiguration))
+                except ConnectionResetError as e:
+                    self._game.show_server_full_or_busy_screen_and_exit()
                 if buff:
                     payload_in = PayloadConfiguration.from_buffer_copy(buff)
                     return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number

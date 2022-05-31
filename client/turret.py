@@ -58,6 +58,11 @@ class Turret(pygame.sprite.Sprite):
                 return projectile
         return None
 
+    def remove_all_projectiles(self):
+        for projectile in self._projectiles:
+            projectile.kill()
+        self._projectiles.clear()
+
     def delete_projectile(self, id):
         """
         Deletes projectile with given ID

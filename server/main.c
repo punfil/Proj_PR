@@ -465,6 +465,14 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct proje
  		return;
  	}
 	int nwrite = 0;
+	
+	//Send all tanks
+	for (int i=0;i<MAX_PLAYERS;i++){
+		if (player_ids[i] == USED_ID){
+			information_set_values(information, UPDATE, TANK, tanks_in_game[i]->player_id, tanks_in_game[i]->x, tanks_in_game[i]->y, tanks_in_game[i]->tank_angle, tanks_in_game[i]->hp, tanks_in_game[i]->turret_angle);
+			nwrite = send_payload(*csock, information, sizeof(struct information));		
+		}
+	}
 
 	//Check if there are any global updates - global_sendings
 	pthread_mutex_lock(&players_mutexes[player_id]);
@@ -478,14 +486,6 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct proje
 		iterator = iterator->next;
 		information_free((struct information*)free_helper->data);
 		free(free_helper);
-	}
-
-	//Send all tanks
-	for (int i=0;i<MAX_PLAYERS;i++){
-		if (player_ids[i] == USED_ID){
-			information_set_values(information, UPDATE, TANK, tanks_in_game[i]->player_id, tanks_in_game[i]->x, tanks_in_game[i]->y, tanks_in_game[i]->tank_angle, tanks_in_game[i]->hp, tanks_in_game[i]->turret_angle);
-			nwrite = send_payload(*csock, information, sizeof(struct information));		
-		}
 	}
 
 	//Send all projectiles

@@ -23,6 +23,18 @@ void singly_linked_list_add(struct singly_linked_node** head, void* data){
     iterator->next = temp;
 }
 
+void singly_linked_list_clear(struct singly_linked_node** head){
+	struct singly_linked_node* iterator = *head;
+	struct singly_linked_node* free_helper = NULL;
+	while (iterator != NULL){
+		free_helper = iterator;
+		iterator = iterator->next;
+		information_free((struct information*)free_helper->data);
+		free(free_helper);
+	}
+    *head = NULL;
+}
+
 void* singly_linked_list_get_at(struct singly_linked_node* head, int index){
     struct singly_linked_node* iterator = head;
     for (int i=0; i < index ;i++){

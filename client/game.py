@@ -368,8 +368,10 @@ class Game:
         :param float projectile_angle: Angle of this projectile
         :return: None
         """
+
         tank = self.get_tank_with_player_id(player_id)
-        tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
+        if tank.turret.get_projectile_with_id(projectile_id) is None:
+            tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
 
     def remove_tank(self, player_id):
         """
@@ -429,13 +431,14 @@ class Game:
         projectile = tank.turret.get_projectile_with_id(projectile_id)
         if projectile is None:
             tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
+            projectile = tank.turret.get_projectile_with_id(projectile_id)
+
         if hp == constants.projectile_not_exists:
             self._explosions_sprites_group.add(Explosion(projectile.x, projectile.y,
                                                          projectile.angle, projectile.explosion))
             self.remove_projectile(player_id, projectile_id)
         elif hp == constants.projectile_exists:
             projectile.update_from_server(x_location, y_location)
-
 
     def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
         """

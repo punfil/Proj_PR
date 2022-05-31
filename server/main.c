@@ -572,6 +572,10 @@ void* player_connection_handler(void* arg){
 	delete_all_projectiles_player_disconnected(my_configuration->player_id, my_configuration->whole_world->projectiles, my_configuration->player_ids);
 	send_info_player_disconnected(my_configuration->player_id, my_configuration->player_ids);
 	clean_up_after_disconnect(my_configuration->csocket, my_configuration->client, my_configuration->tank, my_configuration->player_id, my_configuration->player_ids);
+	pthread_mutex_lock(&players_mutexes[my_configuration->player_id]);
+	singly_linked_list_clear(&global_receivings[my_configuration->player_id]);
+	singly_linked_list_clear(&global_sendings[my_configuration->player_id]);
+	pthread_mutex_unlock(&players_mutexes[my_configuration->player_id]);
 	return NULL;
 }
 

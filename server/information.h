@@ -1,5 +1,6 @@
 #ifndef INFORMATION_H
 #define INFORMATION_H
+#include <stdint.h>
 
 struct information {
 	char action; //Update = movement, create = spawn new tank

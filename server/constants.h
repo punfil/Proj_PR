@@ -2,7 +2,7 @@
 #define CONSTANT_H
 
 //Game settings
-#define MAX_PLAYERS 4
+#define MAX_PLAYERS 7
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define BACKGROUND_SCALE 50

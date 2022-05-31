@@ -531,7 +531,7 @@ void* player_connection_handler(void* arg){
 	printf("###INFO: New client player ID:%d connected from %s\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
 
 	configuration_free(configuration_to_send);
-	
+	int waits_since_last_update = 0;
 	int player_state = OK;
 	while (*(my_configuration->running) && player_state == OK){
 		//Receive the information available
@@ -540,8 +540,14 @@ void* player_connection_handler(void* arg){
 		global_receivings[my_configuration->player_id] = receiver(my_configuration->csocket);
 		//If received nothing then repeat
 		if (global_receivings[my_configuration->player_id] == NULL){
+			waits_since_last_update++;
+			if (waits_since_last_update>CLIENT_NO_RESPONSE_ITERATION){ //Servers waits for CLIENT_NO_RESPONSE_ITERATION*(CLIENT_MOVE_WAIT_USEC+CLIENT_MOVE_WAIT_SEC)
+				player_state = CONNECTION_LOST;
+				*(my_configuration->running) = false;
+			}
 			continue;
 		}
+		waits_since_last_update = 0;
 		player_state = calculate_physics(my_configuration->whole_world, my_configuration->player_id);
 		if (player_state == DISCONNECTED || player_state == DEAD){
 			//Player sent info that he wants to disconnect or died.
@@ -556,6 +562,9 @@ void* player_connection_handler(void* arg){
 	else if (player_state == DEAD){
 		printf("###INFO: Client player ID:%d connected from %s has been reported dead and has been disconnected\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
 		send_info_player_death(my_configuration->csocket, my_configuration->player_id);
+	}
+	else if(player_state==CONNECTION_LOST){
+		printf("###ERROR: Client player ID: %d connected from %s has lost connection with server\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
 	}
 	pthread_mutex_lock(&players_count_mutex);
 	decrement_players_count(my_configuration->players_count);

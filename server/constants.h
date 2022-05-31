@@ -16,6 +16,7 @@
 #define RECEIVER_BUFFER_SIZE 28 //28 = sizeof(struct information)
 #define CLIENT_MOVE_WAIT_SEC 0
 #define CLIENT_MOVE_WAIT_USEC 20
+#define CLIENT_NO_RESPONSE_ITERATION 100000
 
 //For information.action
 #define UPDATE 'u'
@@ -55,5 +56,6 @@
 #define OK 0
 #define DISCONNECTED -1
 #define DEAD -2
+#define CONNECTION_LOST -3
 
 #endif

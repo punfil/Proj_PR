@@ -380,6 +380,7 @@ class Game:
         tank = self.get_tank_with_player_id(player_id)
         if tank is not None:
             tank.turret.remove_all_projectiles()
+            tank.turret.kill()
             tank.kill()
             self._tanks.remove(tank)
             self._player_count -= 1
@@ -426,15 +427,15 @@ class Game:
         """
         tank = self.get_tank_with_player_id(player_id)
         projectile = tank.turret.get_projectile_with_id(projectile_id)
+        if projectile is None:
+            tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
         if hp == constants.projectile_not_exists:
             self._explosions_sprites_group.add(Explosion(projectile.x, projectile.y,
                                                          projectile.angle, projectile.explosion))
             self.remove_projectile(player_id, projectile_id)
         elif hp == constants.projectile_exists:
-            if projectile is None:
-                tank.turret.add_projectile_from_server(projectile_id, x_location, y_location, projectile_angle)
-            else:
-                projectile.update_from_server(x_location, y_location)
+            projectile.update_from_server(x_location, y_location)
+
 
     def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
         """

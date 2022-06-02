@@ -1,13 +1,11 @@
 import socket
-import sys
 from ctypes import *
 from time import sleep
 
 import select
-
-from client import constants
-from client.Networking.payload_configuration import PayloadConfiguration
-from client.Networking.payload_information import PayloadInformation
+import constants
+from Networking.payload_configuration import PayloadConfiguration
+from Networking.payload_information import PayloadInformation
 
 
 class Connection:

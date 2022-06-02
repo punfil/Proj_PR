@@ -176,7 +176,7 @@ class Game:
         # Adding my tank. Opponents tanks will be added later
         self._tanks = []
         self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, tank_spawn_angle,
-                             self.load_resource("./client/resources/tank.json"))
+                             self.load_resource("./resources/tank.json"))
         self.send_tank_position(self._my_tank.x, self._my_tank.y, self._my_tank.angle,
                                 self._my_tank.hp, self._my_tank.turret.angle)
         # sending the correct tank position (determined from spawn point) to the server
@@ -209,7 +209,7 @@ class Game:
         :param float tank_angle: Angle of the tank
         :return: None
         """
-        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource("./client/resources/tank.json"))
+        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource("./resources/tank.json"))
         self._tanks_sprites_group.add(tank)
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)
@@ -291,7 +291,7 @@ class Game:
         """
         finished = False
         time_start = time.time()
-        dead_image = pygame.image.load("./client/Pictures/busy_or_full.png").convert_alpha()
+        dead_image = pygame.image.load("./Pictures/busy_or_full.png").convert_alpha()
         self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
         while not finished:
             for ev in pygame.event.get():
@@ -310,7 +310,7 @@ class Game:
         self._connection.close_connection()
         finished = False
         time_start = time.time()
-        dead_image = pygame.image.load("./client/Pictures/dead.png").convert_alpha()
+        dead_image = pygame.image.load("./Pictures/dead.png").convert_alpha()
         self._screen.blit(self.surface_to_grayscale(self._screen), (0, 0))
         self._screen.blit(dead_image, dead_image.get_rect(center=self._screen.get_rect().center))
         while not finished:

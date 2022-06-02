@@ -20,3 +20,4 @@ server/.vscode/c_cpp_properties.json
 server/main
 server/bioz/*
 *.pyc
+client/.idea/Proj_PR.iml

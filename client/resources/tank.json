@@ -1,7 +1,7 @@
 {
-	"texture": "./client/Pictures/tank.png",
-	"turret": "./client/resources/turret.json",
-	"shield": "./client/resources/shield.json",
+	"texture": "./Pictures/tank.png",
+	"turret": "./resources/turret.json",
+	"shield": "./resources/shield.json",
 	"hp": 10,
 	"max_speed": 150,
 	"acceleration": 150,

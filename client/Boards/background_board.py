@@ -1,5 +1,5 @@
 import pygame
-from client.tile import Tile
+from tile import Tile
 
 
 class BackgroundBoard:

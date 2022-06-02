@@ -1,5 +1,5 @@
 {
-	"texture": "./client/Pictures/grass.png",
+	"texture": "./Pictures/grass.png",
 	"move_speed": 0.7,
 	"visibility": 255,
 	"blocks_movement":  false,

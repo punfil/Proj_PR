@@ -1,6 +1,6 @@
 {
-	"texture": "./client/Pictures/turret.png",
-	"ammo": "./client/resources/projectile.json",
+	"texture": "./Pictures/turret.png",
+	"ammo": "./resources/projectile.json",
 	"rotation_speed": 180,
 	"full_rotation": false,
 	"max_left_angle": 150,

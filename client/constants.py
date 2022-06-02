@@ -50,13 +50,13 @@ information_tank = 't'
 information_projectile = 'p'
 
 """Map editor"""
-default_map_editor_tile = "./client/resources/grass.json"
-map_editor_tiles = ["./client/resources/grass.json", "./client/resources/asphalt.json", "./client/resources/house.json"]
+default_map_editor_tile = "./resources/grass.json"
+map_editor_tiles = ["./resources/grass.json", "./resources/asphalt.json", "./resources/house.json"]
 spawn_point_rotation_angle = 22.5
 maps = {
-    0: "./client/maps/tank_prix.json",
-    1: "./client/maps/city.json",
-    2: "./client/maps/all_your_base_are_belong_to_us.json",
-    3: "./client/maps/flower.json",
-    2137: "./client/maps/2137.json"
+    0: "./maps/tank_prix.json",
+    1: "./maps/city.json",
+    2: "./maps/all_your_base_are_belong_to_us.json",
+    3: "./maps/flower.json",
+    2137: "./maps/2137.json"
 }

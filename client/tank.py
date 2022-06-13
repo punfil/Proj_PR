@@ -15,6 +15,7 @@ class Tank(pygame.sprite.Sprite):
         _player_no: ID of the player that this tank belongs to
         ..other
     """
+
     def __init__(self, player_no, game, x, y, angle, attributes):
         super().__init__()
         self._player_no = player_no
@@ -221,11 +222,8 @@ class Tank(pygame.sprite.Sprite):
                         self._collision_cooldown = constants.object_collision_cooldown
                         self.offset_hp(-constants.object_collision_damage)
 
-                if self._shield_active:
-                    self._shield.rect.center = self.rect.center
-
             self._game.send_tank_position(self._x, self._y, self._angle, self._hp, self._turret.angle)
-            #self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
+            # self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
 
         # If it's not mine tank
         else:
@@ -234,6 +232,8 @@ class Tank(pygame.sprite.Sprite):
         # Update image for all tanks
         self.rect.center = (self._x, self._y)
         self._hp_bar.update_hp(self._hp)
+        if self._shield_active:
+            self._shield.rect.center = self.rect.center
 
     def accelerate(self, acceleration):
         """

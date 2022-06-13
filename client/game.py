@@ -29,6 +29,7 @@ class Game:
         self._height = constants.window_height
         self._player_count = None
         self._my_player_id = None
+        self._tank_version = 0
 
         # Connection related variables
         self._connection = None
@@ -131,6 +132,8 @@ class Game:
                                       theme=pygame_menu.themes.THEME_DARK)
         self._menu.add.text_input('Server IP Address :', default=self._server_address,
                                   onchange=self.change_server_ip)
+        self._menu.add.selector('Tank: ', constants.tank_selections,
+                                onchange=lambda _, tank_version: self.set_tank_version(tank_version))
         self._menu.add.button("Play", self.quit_menu)
 
         def exit_game_button():
@@ -148,9 +151,8 @@ class Game:
         if not self._connection.establish_connection():
             self.show_server_full_or_busy_screen_and_exit()
             return False
-        tank_version = 0
         tank_full_hp = 10.0
-        self._connection.send_preferences(tank_version, tank_full_hp)
+        self._connection.send_preferences(self._tank_version, tank_full_hp)
         _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_configuration()
         if self._player_count == constants.configuration_receive_error:
             self.show_server_full_or_busy_screen_and_exit()
@@ -179,7 +181,7 @@ class Game:
         # Adding my tank. Opponents tanks will be added later
         self._tanks = []
         self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, tank_spawn_angle,
-                             self.load_resource("./resources/tank.json"))
+                             self.load_resource(constants.tank_versions[self._tank_version]))
         self.send_tank_position(self._my_tank.x, self._my_tank.y, self._my_tank.angle,
                                 self._my_tank.hp, self._my_tank.turret.angle)
         # sending the correct tank position (determined from spawn point) to the server
@@ -203,16 +205,19 @@ class Game:
                 return i
         return None
 
-    def add_new_tank(self, player_id, x, y, tank_angle):
+    def add_new_tank(self, player_id, x, y, tank_angle, tank_version):
         """
         Adds new tank according to the information received from the server
         :param int player_id: ID of the player this tank belongs to
         :param int x: X coordinate of the tank's location
         :param int y: Y coordinate of the tank's location
         :param float tank_angle: Angle of the tank
+        :param int tank_version: Number representing the tank version
         :return: None
         """
-        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource("./resources/tank.json"))
+        if tank_version not in constants.tank_versions:
+            tank_version = 0
+        tank = Tank(player_id, self, x, y, tank_angle, self.load_resource(constants.tank_versions[tank_version]))
         self._tanks_sprites_group.add(tank)
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)
@@ -403,7 +408,8 @@ class Game:
         """
         tank = self.get_tank_with_player_id(player_id)
         if tank is None:
-            self.add_new_tank(player_id, x_location, y_location, tank_angle)
+            print("tank angle =", tank_angle, "turret angle =", turret_angle)
+            self.add_new_tank(player_id, x_location, y_location, tank_angle, tank_version=int(turret_angle))
         else:
             self.get_tank_with_player_id(player_id).update_values_from_server(x_location, y_location, tank_angle, hp,
                                                                               turret_angle)
@@ -529,6 +535,9 @@ class Game:
             self._hp_bars_sprites_group.draw(self._screen)
 
             pygame.display.flip()
+
+    def set_tank_version(self, new_tank_version):
+        self._tank_version = new_tank_version
 
     @property
     def my_player_id(self):

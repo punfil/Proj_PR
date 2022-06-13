@@ -4,6 +4,13 @@ window_height = 600
 window_width = 800
 background_scale = 50
 target_fps = 60
+# Menu
+tank_selections = [("Classic", 0), ("Archer", 1), ("Laser", 2)]
+tank_versions = {
+    0: "./resources/tanks/tank_classic/tank.json",
+    1: "./resources/tanks/tank_archer/tank.json",
+    2: "./resources/tanks/tank_laser/tank.json"
+}
 # HP BAR
 hp_bar_width = 50
 hp_bar_height = 5

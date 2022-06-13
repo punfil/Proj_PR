@@ -1,0 +1,7 @@
+{
+	"texture": "./Pictures/projectile_laser.png",
+	"speed": 500,
+	"damage": 5,
+	"lifetime": 2,
+	"explosion": "./resources/animations/explosion.json"
+}

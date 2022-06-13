@@ -1,0 +1,12 @@
+{
+	"texture": "./Pictures/tank_classic.png",
+	"turret": "./resources/tanks/tank_classic/turret.json",
+	"shield": "./resources/tanks/tank_classic/shield.json",
+	"hp": 10,
+	"max_speed": 150,
+	"acceleration": 150,
+	"deceleration": 150,
+	"drag": 200,
+	"turn_rate": 135,
+	"driftiness": 0.9
+}

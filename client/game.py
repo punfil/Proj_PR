@@ -149,13 +149,13 @@ class Game:
         """initializes all variables, loads data from server"""
         self._connection = Connection(self, self._server_address)
         if not self._connection.establish_connection():
-            self.show_server_full_or_busy_screen_and_exit()
+            self.show_server_full_or_busy_screen()
             return False
         tank_full_hp = 10.0
         self._connection.send_preferences(self._tank_version, tank_full_hp)
         _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_configuration()
         if self._player_count == constants.configuration_receive_error:
-            self.show_server_full_or_busy_screen_and_exit()
+            self.show_server_full_or_busy_screen()
             return False
         self._player_count = 1  # This variable is modified within other functions that will be used to add existing players
         self._connection.player_id = self._my_player_id
@@ -292,9 +292,9 @@ class Game:
         new_arr = np.repeat(mean_arr3d[:, :, :], 3, axis=2)
         return pygame.surfarray.make_surface(new_arr)
 
-    def show_server_full_or_busy_screen_and_exit(self):
+    def show_server_full_or_busy_screen(self):
         """
-        Display the screen that the server is full or busy at the moment and exits the game
+        Display the screen that the server is full or busy at the moment and returns to the main menu
         :return: None
         """
         finished = False
@@ -308,11 +308,13 @@ class Game:
             pygame.display.flip()
             if time.time() - time_start > constants.server_full_or_busy_screen_display_time_sec:
                 finished = True
-        self.exit_game(False)
 
-    def show_death_screen_and_exit(self):
+        if self.setup():
+            self.play()
+
+    def show_death_screen(self):
         """
-        Displays the screen that this player has died and exits the game
+        Displays the screen that this player has died and returns to the main menu
         :return: None
         """
         self._connection.close_connection()
@@ -328,7 +330,10 @@ class Game:
             pygame.display.flip()
             if time.time() - time_start > constants.death_screen_display_time_sec:
                 finished = True
-        self.exit_game(False)
+            self._clock.tick(constants.target_fps)
+
+        if self.setup():
+            self.play()
 
     def exit_game(self, should_close_connection):
         """

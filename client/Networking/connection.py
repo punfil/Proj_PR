@@ -36,14 +36,15 @@ class Connection:
         """
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.settimeout(constants.socket_timeout)
             self._socket.connect((self._address, self._port))
+        except TimeoutError as err:
+            return False
         except socket.error as err:
             return False
         except AttributeError as err:
             return False
-        finally:
-            self._socket.settimeout(constants.socket_timeout)
-            return True
+        return True
 
     def close_connection(self):
         """
@@ -61,7 +62,7 @@ class Connection:
         try:
             nsent = self._socket.send(payload_out)
         except ConnectionResetError as e:
-            self._game.show_server_full_or_busy_screen_and_exit()
+            self._game.show_server_full_or_busy_screen()
         if nsent:
             return True
         return False
@@ -136,7 +137,7 @@ class Connection:
         try:
             nsent = self._socket.send(payload_out)
         except ConnectionResetError as e:
-            self._game.show_server_full_or_busy_screen_and_exit()
+            self._game.show_server_full_or_busy_screen()
         if nsent:
             return True
         return False
@@ -158,10 +159,10 @@ class Connection:
                 try:
                     buff = self._socket.recv(sizeof(PayloadInformation))
                 except ConnectionResetError as e:
-                    self._game.show_server_full_or_busy_screen_and_exit()
+                    self._game.show_server_full_or_busy_screen()
                 if len(buff) < 28:
                     print("##DEBUG Error - received less bytes than expected!")
-                    self._game.show_server_full_or_busy_screen_and_exit()
+                    self._game.show_server_full_or_busy_screen()
                     return receivings
                 payload_in: PayloadInformation = PayloadInformation.from_buffer_copy(buff)
                 receivings.append(payload_in)
@@ -182,7 +183,7 @@ class Connection:
                 try:
                     buff = self._socket.recv(sizeof(PayloadConfiguration))
                 except ConnectionResetError as e:
-                    self._game.show_server_full_or_busy_screen_and_exit()
+                    self._game.show_server_full_or_busy_screen()
                 if buff:
                     payload_in = PayloadConfiguration.from_buffer_copy(buff)
                     return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number
@@ -225,7 +226,7 @@ class Connection:
             elif received_information.action.decode('utf-8') == constants.information_disconnect:
                 self._game.remove_tank(received_information.player_id)
             elif received_information.action.decode('utf-8') == constants.information_death:
-                self._game.show_death_screen_and_exit()
+                self._game.show_death_screen()
                 return
             else:
                 print(f"ERROR: Received wrong command! You wanted to: {received_information.action.decode('utf-8')}")

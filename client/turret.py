@@ -2,6 +2,7 @@ import pygame
 
 import constants
 from projectile import Projectile
+from math import sin, cos, pi
 import random
 
 
@@ -153,20 +154,20 @@ class Turret(pygame.sprite.Sprite):
 
             for i in range(self._projectiles_per_shot):
                 # Shoot in various directions
-                #offset = self._projectile_offsets[self._projectile_offset_index]
+                offset = self._projectile_offsets[self._projectile_offset_index]
 
                 # # x offset
-                # projectile_x = offset[0] * cos(-self._absolute_angle * (pi / 180))
-                # projectile_y = offset[0] * sin(-self._absolute_angle * (pi / 180))
-                #
-                # # y offset
-                # projectile_x += -offset[1] * sin(self._absolute_angle * (pi / 180))
-                # projectile_y += -offset[1] * cos(self._absolute_angle * (pi / 180))
+                projectile_x = offset[0] * cos(-self._absolute_angle * (pi / 180))
+                projectile_y = offset[0] * sin(-self._absolute_angle * (pi / 180))
 
-                projectile_x = self._tank.x
-                projectile_y = self._tank.y
+                # y offset
+                projectile_x += -offset[1] * sin(self._absolute_angle * (pi / 180))
+                projectile_y += -offset[1] * cos(self._absolute_angle * (pi / 180))
 
-                projectile_angle = self._absolute_angle  # - offset[2]
+                projectile_x += self._tank.x
+                projectile_y += self._tank.y
+
+                projectile_angle = self._absolute_angle - offset[2]
                 projectile_angle += (random.random() - 0.5) * self._inaccuracy * 2
 
                 projectile = Projectile(self._projectile_next_id, self._tank, projectile_x, projectile_y,

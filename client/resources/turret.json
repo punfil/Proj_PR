@@ -8,10 +8,7 @@
 	"inaccuracy": 5,
 	"cooldown": 0.5,
 	"projectile_offsets": [
-		[-10, 40, -10],
-		[10, 40, 10],
-		[0, 40, 0],
-		[0, 0, -180]
+		[0, 30, 0]
 	],
 	"projectiles_per_shot": 1
 }

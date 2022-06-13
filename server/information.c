@@ -12,11 +12,11 @@ struct information* information_alloc(){
 	if (self==NULL){
 		return NULL;
 	}
-	memset(self, 0, sizeof(struct information*));
+	memset(self, 0, sizeof(struct information));
 	return self;
 }
 
-void information_set_values(struct information* self, char action, char type_of, uint32_t player_id, float x_location, float y_location, float tank_angle, float hp, float turret_angle){
+void information_set_values(struct information* self, char action, char type_of, uint32_t player_id, float x_location, float y_location, float tank_angle, float hp, float turret_angle, uint32_t tank_version, bool shield_active){
 	self->action = action;
 	self->type_of = type_of;
 	self->player_id = player_id;
@@ -25,6 +25,8 @@ void information_set_values(struct information* self, char action, char type_of,
 	self->tank_angle = tank_angle;
 	self->hp = hp;
 	self->turret_angle = turret_angle;
+	self->tank_version = tank_version;
+	self->shield_active = shield_active;
 }
 
 void information_free(struct information* self){

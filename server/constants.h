@@ -13,10 +13,11 @@
 #define SERVER_EXIT_BUTTON 'q'
 #define FULL_SERVER_INFO -99
 #define NEW_CLIENT_WAIT_TIME_SEC 5 //Set this to turn off the server using SERVER_EXIT_BUTTON
-#define RECEIVER_BUFFER_SIZE 28 //28 = sizeof(struct information)
+#define RECEIVER_BUFFER_SIZE sizeof(struct information) //largest struct
 #define CLIENT_MOVE_WAIT_SEC 0
 #define CLIENT_MOVE_WAIT_USEC 20
 #define CLIENT_NO_RESPONSE_ITERATION 100000
+#define INFORMATION_NOT_REQUIRED 0
 
 //For information.action
 #define UPDATE 'u'
@@ -41,9 +42,9 @@
 
 //Tank settings
 #define DEFAULT_MAP_NUMBER 0
-#define DEFAULT_TANK_SKIN 0
-#define TANK_SPAWN_POINT_X 400.0
-#define TANK_SPAWN_POINT_Y 400.0
+#define DEFAULT_TANK_VERSION 0
+#define TANK_SPAWN_POINT_X -400.0
+#define TANK_SPAWN_POINT_Y -400.0
 #define FULL_HP 10.0
 #define EMPTY_HP 0.0
 #define NO_ROTATION 0.0
@@ -51,6 +52,8 @@
 #define DEFAULT_TANK_TURRET_ANGLE 0.0
 #define TANK_COLLISION_R 25 //In pixels - Treat tank as circle when dealing with collisions
 #define TANK_PROJECTILE_COLLISION_DAMAGE 2.5
+#define SHIELD_ACTIVE true
+#define SHIELD_INACTIVE false
 
 //States of players for function calculate_physics
 #define OK 0

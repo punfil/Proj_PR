@@ -73,10 +73,10 @@ class Connection:
         :return: None
         """
         self.send_single_information(constants.information_disconnect, constants.information_disconnect,
-                                     self._player_id, -1, -1, 0.0, 0.0, 0.0)
+                                     self._player_id, -1, -1, 0.0, 0.0, 0.0, 0, False)
         #  Those variables are random, server first checks the disconnect information and closes the connection.
 
-    def send_want_to_change_tank_or_turret(self, x_location, y_location, tank_angle, hp, turret_angle):
+    def send_want_to_change_tank_or_turret(self, x_location, y_location, tank_angle, hp, turret_angle, tank_version, shield_active):
         """
         Sends tank related variables to the server
         :param int x_location: X coordinate of the tank
@@ -87,7 +87,7 @@ class Connection:
         :return: None
         """
         self.send_single_information(constants.information_update, constants.information_tank, self.player_id,
-                                     x_location, y_location, tank_angle, hp, turret_angle)
+                                     x_location, y_location, tank_angle, hp, turret_angle, tank_version, shield_active)
 
     def send_want_to_new_projectile(self, projectile_id, x_location, y_location, projectile_angle):
         """
@@ -100,7 +100,7 @@ class Connection:
         """
         self.send_single_information(constants.information_create, constants.information_projectile, self.player_id,
                                      x_location, y_location, projectile_angle, constants.projectile_exists,
-                                     float(projectile_id))
+                                     float(projectile_id), 0, False)
 
     def send_want_to_change_projectile(self, projectile_id, x_location, y_location, projectile_angle, hp):
         """
@@ -114,9 +114,9 @@ class Connection:
         """
         self.send_single_information(constants.information_update, constants.information_projectile, self.player_id,
                                      x_location, y_location, projectile_angle, hp,
-                                     float(projectile_id))
+                                     float(projectile_id), 0, False)
 
-    def send_single_information(self, action, type_of, player_id, x_location, y_location, tank_angle, hp, turret_angle):
+    def send_single_information(self, action, type_of, player_id, x_location, y_location, tank_angle, hp, turret_angle, tank_version, shield_active):
         """
         Sends single information to the server
         :param str action: (char) - Action to be taken
@@ -132,7 +132,7 @@ class Connection:
         """
         payload_out = PayloadInformation(action.encode('utf-8'), type_of.encode('utf-8'), player_id, x_location,
                                          y_location, tank_angle, hp,
-                                         turret_angle)
+                                         turret_angle, tank_version, shield_active)
         nsent = None
         try:
             nsent = self._socket.send(payload_out)
@@ -206,7 +206,8 @@ class Connection:
                     self._game.update_tank(received_information.player_id, received_information.x_location,
                                            received_information.y_location,
                                            received_information.tank_angle, received_information.hp,
-                                           received_information.turret_angle)
+                                           received_information.turret_angle, received_information.tank_version,
+                                           received_information.shield_active)
                 elif received_information.type_of.decode('utf-8') == constants.information_projectile:
                     # Create projectile
                     if received_information.action.decode('utf-8') == constants.information_create:

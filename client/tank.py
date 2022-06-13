@@ -142,7 +142,8 @@ class Tank(pygame.sprite.Sprite):
 
         # activating the shield
         if self.keys[pygame.K_s]:
-            self.activate_shield()
+            if self._shield_current_cooldown <= 0:
+                self.activate_shield()
 
         return True
 
@@ -222,12 +223,15 @@ class Tank(pygame.sprite.Sprite):
                         self._collision_cooldown = constants.object_collision_cooldown
                         self.offset_hp(-constants.object_collision_damage)
 
-            self._game.send_tank_position(self._x, self._y, self._angle, self._hp, self._turret.angle)
+            self._game.send_tank_position(self._x, self._y, self._angle, self._hp, self._turret.angle,
+                                          self._shield_active)
             # self._x, self._y, self._angle, self._hp, self._turret.angle = x, y, angle, hp, turret_angle
 
         # If it's not mine tank
         else:
             self.rotate_not_mine()
+            if self._shield_active:
+                self.offset_shield_hp(-self._shield_decay * delta_time)  # Update time of the shield
 
         # Update image for all tanks
         self.rect.center = (self._x, self._y)
@@ -309,7 +313,7 @@ class Tank(pygame.sprite.Sprite):
         Activates the shield if it is ready (cooldown <= 0)
         :return: None
         """
-        if not self._shield_active and self._shield_current_cooldown <= 0:
+        if not self._shield_active:
             self._shield_active = True
             self._shield_current_cooldown = self._shield_cooldown
             self._shield_hp = self._shield_max_hp
@@ -339,12 +343,15 @@ class Tank(pygame.sprite.Sprite):
         self._shield_hp += value
 
         if self._shield_hp <= 0:
-            self._shield_active = False
-            self._shield_current_cooldown = self._shield_cooldown
-            self._shield.kill()  # a bit hacky but whatever
-            self._game.remove_hp_bar(self._shield_bar)
+            self.shield_deactivate()
         else:
             self._shield_bar.update_hp(self._shield_hp)
+
+    def shield_deactivate(self):
+        self._shield_active = False
+        self._shield_current_cooldown = self._shield_cooldown
+        self._shield.kill()  # a bit hacky but whatever
+        self._game.remove_hp_bar(self._shield_bar)
 
     def check_y_move(self, value):
         """
@@ -373,7 +380,7 @@ class Tank(pygame.sprite.Sprite):
             return False
         return True
 
-    def update_values_from_server(self, x, y, tank_angle, hp, turret_angle):
+    def update_values_from_server(self, x, y, tank_angle, hp, turret_angle, shield_active):
         """
         Updates values of the tank according to the information received from the server
         :param int x: New X coordinate of the tank's location
@@ -388,6 +395,12 @@ class Tank(pygame.sprite.Sprite):
         self._angle = tank_angle
         self._hp = hp
         self._turret.update_from_server(turret_angle)
+        if self._shield_active != shield_active:
+            if self._shield_active:
+                self.shield_deactivate()
+            else:
+                self.activate_shield()
+        self._shield_active = shield_active
 
     @property
     def turret(self):
@@ -428,3 +441,7 @@ class Tank(pygame.sprite.Sprite):
     @property
     def max_hp(self):
         return self._max_hp
+
+    @property
+    def shield_active(self):
+        return self._shield_active

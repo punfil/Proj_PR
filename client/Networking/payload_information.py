@@ -14,4 +14,6 @@ class PayloadInformation(Structure):
         ("tank_angle", c_float),
         ("hp", c_float),
         ("turret_angle", c_float),
+        ("tank_version", c_int32),
+        ("shield_active", c_bool),
     ]

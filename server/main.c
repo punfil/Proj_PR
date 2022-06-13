@@ -241,7 +241,7 @@ void send_info_new_player_connected(int player_id, struct tank* tank, int* playe
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
 			struct information* sending = information_alloc();
-			information_set_values(sending, CREATE, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, FULL_HP, DEFAULT_TANK_TURRET_ANGLE);
+			information_set_values(sending, CREATE, TANK, player_id, tank->x, tank->y, tank->tank_angle, tank->hp, tank->turret_angle, tank->tank_version, tank->shield_active);
 			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
 			pthread_mutex_unlock(&players_mutexes[i]);
@@ -254,7 +254,7 @@ void send_info_player_disconnected(int player_id, int* player_ids){
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one disconnecting!
 			struct information* sending = information_alloc();
-			information_set_values(sending, DISCONNECT, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, EMPTY_HP, DEFAULT_TANK_TURRET_ANGLE);
+			information_set_values(sending, DISCONNECT, TANK, player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, EMPTY_HP, DEFAULT_TANK_TURRET_ANGLE, DEFAULT_TANK_VERSION, SHIELD_INACTIVE);
 			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
 			pthread_mutex_unlock(&players_mutexes[i]);
@@ -280,7 +280,7 @@ void send_info_new_projectile(int player_id, struct projectile* projectile, int*
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && player_id != i){ //Send to all connected players but not to the one connecting!
 			struct information* sending = information_alloc();
-			information_set_values(sending, CREATE, PROJECTILE, player_id, projectile->x, projectile->y, projectile->angle, (float)PROJECTILE_EXISTS, (float)projectile->id); // default angle, HP, turret_angle
+			information_set_values(sending, CREATE, PROJECTILE, player_id, projectile->x, projectile->y, projectile->angle, (float)PROJECTILE_EXISTS, (float)projectile->id, INFORMATION_NOT_REQUIRED, INFORMATION_NOT_REQUIRED); // default angle, HP, turret_angle
 			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
 			pthread_mutex_unlock(&players_mutexes[i]);
@@ -293,7 +293,7 @@ void send_info_projectile_delete(struct projectile* projectile, int* player_ids,
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID && ((send_to_owner == true) || (send_to_owner == false && i != projectile->owner_id))){ 
 			struct information* sending = information_alloc();
-			information_set_values(sending, UPDATE, PROJECTILE, projectile->owner_id, projectile->x, projectile->y, (float)POSITION_NOT_REQUIRED, (float)PROJECTILE_NOT_EXISTS, (float)projectile->id);
+			information_set_values(sending, UPDATE, PROJECTILE, projectile->owner_id, projectile->x, projectile->y, (float)POSITION_NOT_REQUIRED, (float)PROJECTILE_NOT_EXISTS, (float)projectile->id, INFORMATION_NOT_REQUIRED, INFORMATION_NOT_REQUIRED);
 			pthread_mutex_lock(&players_mutexes[i]);
 			singly_linked_list_add(&global_sendings[i], sending);
 			pthread_mutex_unlock(&players_mutexes[i]);
@@ -304,7 +304,7 @@ void send_info_projectile_delete(struct projectile* projectile, int* player_ids,
 //Send info to player that he died
 void send_info_player_death(int* csocket, int player_id){
 	struct information* information = information_alloc();
-	information_set_values(information, DIE, TANK, player_id, POSITION_NOT_REQUIRED, POSITION_NOT_REQUIRED, DEFAULT_TANK_ANGLE, EMPTY_HP, DEFAULT_TANK_TURRET_ANGLE);
+	information_set_values(information, DIE, TANK, player_id, POSITION_NOT_REQUIRED, POSITION_NOT_REQUIRED, DEFAULT_TANK_ANGLE, EMPTY_HP, DEFAULT_TANK_TURRET_ANGLE, INFORMATION_NOT_REQUIRED, INFORMATION_NOT_REQUIRED);
 	int nwrite = send_payload(*csocket, information, sizeof(struct information));
 	information_free(information);
 }
@@ -437,8 +437,7 @@ void* connection_handler(void* arg){
 		
 		//Receive client options and preferences
 		struct client_preferences* options = receive_single_client_preference(csockets[current_player_id]);
-		tank_set_values(tanks_in_game[current_player_id], current_player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, options->tank_max_hp, DEFAULT_TANK_TURRET_ANGLE, options->tank_version);
-		printf("##DEBUG: Received tank skin %d and max HP %f\n", options->tank_max_hp, options->tank_version);
+		tank_set_values(tanks_in_game[current_player_id], current_player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, options->tank_max_hp, DEFAULT_TANK_TURRET_ANGLE, options->tank_version, SHIELD_INACTIVE);
 		client_preferences_free(options);
 		
 		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
@@ -498,11 +497,10 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct proje
 	//Send all tanks
 	for (int i=0;i<MAX_PLAYERS;i++){
 		if (player_ids[i] == USED_ID){
-			information_set_values(information, UPDATE, TANK, tanks_in_game[i]->player_id, tanks_in_game[i]->x, tanks_in_game[i]->y, tanks_in_game[i]->tank_angle, tanks_in_game[i]->hp, tanks_in_game[i]->turret_angle);
-			nwrite = send_payload(*csock, information, sizeof(struct information));		
+			information_set_values(information, UPDATE, TANK, tanks_in_game[i]->player_id, tanks_in_game[i]->x, tanks_in_game[i]->y, tanks_in_game[i]->tank_angle, tanks_in_game[i]->hp, tanks_in_game[i]->turret_angle, tanks_in_game[i]->tank_version, tanks_in_game[i]->shield_active);
+			nwrite = send_payload(*csock, (void*)information, sizeof(struct information));		
 		}
 	}
-
 	//Check if there are any global updates - global_sendings
 	pthread_mutex_lock(&players_mutexes[player_id]);
 	struct singly_linked_node* iterator = global_sendings[player_id];
@@ -521,7 +519,7 @@ void sender(int* csock, int player_id, struct tank** tanks_in_game, struct proje
 	for (int i=0;i<MAX_PROJECTILES_PER_PLAYER*MAX_PLAYERS;i++){
 		if (projectiles[i]!=NULL){
 			pthread_mutex_lock(&players_mutexes[i/MAX_PROJECTILES_PER_PLAYER]);
-			information_set_values(information, UPDATE, PROJECTILE, projectiles[i]->owner_id, projectiles[i]->x, projectiles[i]->y, projectiles[i]->angle, (float)PROJECTILE_EXISTS, (float)projectiles[i]->id);
+			information_set_values(information, UPDATE, PROJECTILE, projectiles[i]->owner_id, projectiles[i]->x, projectiles[i]->y, projectiles[i]->angle, (float)PROJECTILE_EXISTS, (float)projectiles[i]->id, INFORMATION_NOT_REQUIRED, SHIELD_INACTIVE);
 			pthread_mutex_unlock(&players_mutexes[i/MAX_PROJECTILES_PER_PLAYER]);
 			nwrite = send_payload(*csock, information, sizeof(struct information));
 		}
@@ -553,12 +551,10 @@ void* player_connection_handler(void* arg){
 	//Send configuration to the new client
 	struct configuration* configuration_to_send = configuration_alloc();
 	configuration_set_values(configuration_to_send, WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_SCALE, *(my_configuration->players_count), my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, my_configuration->whole_world->map_number);
-
-	tank_set_values(my_configuration->tank, my_configuration->player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, NO_ROTATION, FULL_HP, NO_ROTATION, DEFAULT_TANK_SKIN);
-
+	
 	send_payload(*(my_configuration->csocket), configuration_to_send, sizeof(struct configuration));
 	printf("###INFO: New client player ID:%d connected from %s\n", my_configuration->player_id, inet_ntoa(my_configuration->client->sin_addr));
-
+	
 	configuration_free(configuration_to_send);
 	int waits_since_last_update = 0;
 	int player_state = OK;
@@ -635,7 +631,7 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 			if (data->type_of == TANK){
 				//Update tank
 				pthread_mutex_lock(&players_mutexes[player_id]);
-				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, MIN(data->hp, my_configuration->tanks[player_id]->hp), data->turret_angle, DEFAULT_TANK_SKIN);
+				tank_set_values(my_configuration->tanks[player_id], data->player_id, data->x_location, data->y_location, data->tank_angle, MIN(data->hp, my_configuration->tanks[player_id]->hp), data->turret_angle, data->tank_version, data->shield_active);
 				pthread_mutex_unlock(&players_mutexes[player_id]);
 				if (data->hp<=EMPTY_HP){
 					return_value = DEAD; //I am dead. Disconnect the player. Player connection handler will do the rest.
@@ -662,15 +658,16 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 						if (my_configuration->player_ids[i] == USED_ID){
 							int this_projectile_collision = check_tank_collision_with_projectile(my_configuration->tanks[i], this_projectile);
 							if (this_projectile_collision == DEAD){
-								int this_projectile_owner_id = this_projectile->owner_id;
 								pthread_mutex_lock(&players_mutexes[i]);
-								my_configuration->tanks[i]->hp -= TANK_PROJECTILE_COLLISION_DAMAGE;
+								if (my_configuration->tanks[i]->shield_active == false){
+									my_configuration->tanks[i]->hp -= TANK_PROJECTILE_COLLISION_DAMAGE;
+								}
 								pthread_mutex_unlock(&players_mutexes[i]);
 
 								send_info_projectile_delete(this_projectile, my_configuration->player_ids, true);
 
 								pthread_mutex_lock(&players_mutexes[i]);
-								remove_projectile_from_list(my_configuration->projectiles, this_projectile->id); //This is bad, MUST be replaced!
+								remove_projectile_from_list(my_configuration->projectiles, this_projectile->id);
 								pthread_mutex_unlock(&players_mutexes[i]);
 								exit = true;
 							}
@@ -688,6 +685,7 @@ int calculate_physics(struct whole_world* my_configuration, int player_id){
 		}
 		else{
 			printf("##ERROR: Unknown command received!\n");
+			fflush(stdout);
 		}
 		free_help = iterator;
 		iterator = iterator->next;

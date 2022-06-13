@@ -183,7 +183,7 @@ class Game:
         self._my_tank = Tank(self._my_player_id, self, tank_spawn_x, tank_spawn_y, tank_spawn_angle,
                              self.load_resource(constants.tank_versions[self._tank_version]))
         self.send_tank_position(self._my_tank.x, self._my_tank.y, self._my_tank.angle,
-                                self._my_tank.hp, self._my_tank.turret.angle)
+                                self._my_tank.hp, self._my_tank.turret.angle, self._my_tank.shield_active)
         # sending the correct tank position (determined from spawn point) to the server
 
         self._tanks_sprites_group.add(self._my_tank)
@@ -400,7 +400,7 @@ class Game:
             self._tanks.remove(tank)
             self._player_count -= 1
 
-    def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle):
+    def update_tank(self, player_id, x_location, y_location, tank_angle, hp, turret_angle, tank_version, shield_active):
         """
         Updates the tank values according to the information received from the server.
         :param int player_id: ID of the player that this tank belongs to
@@ -413,11 +413,9 @@ class Game:
         """
         tank = self.get_tank_with_player_id(player_id)
         if tank is None:
-            print("tank angle =", tank_angle, "turret angle =", turret_angle)
-            self.add_new_tank(player_id, x_location, y_location, tank_angle, tank_version=int(turret_angle))
+            self.add_new_tank(player_id, x_location, y_location, tank_angle, tank_version)
         else:
-            self.get_tank_with_player_id(player_id).update_values_from_server(x_location, y_location, tank_angle, hp,
-                                                                              turret_angle)
+            tank.update_values_from_server(x_location, y_location, tank_angle, hp, turret_angle, shield_active)
 
     def remove_projectile(self, player_id, projectile_id):
         """
@@ -454,7 +452,7 @@ class Game:
         elif hp == constants.projectile_exists:
             projectile.update_from_server(x_location, y_location)
 
-    def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle):
+    def send_tank_position(self, x_location, y_location, tank_angle, hp, turret_angle, shield_active):
         """
         Sends calculated position of the tank
         :param int x_location: New X coordinate of the tank's position
@@ -464,7 +462,8 @@ class Game:
         :param float turret_angle: New tank's turret's angle
         :return: None
         """
-        self._connection.send_want_to_change_tank_or_turret(x_location, y_location, tank_angle, hp, turret_angle)
+        self._connection.send_want_to_change_tank_or_turret(x_location, y_location, tank_angle, hp, turret_angle,
+                                                            self._tank_version, shield_active)
 
     def send_projectile_add(self, projectile_id, x_location, y_location, projectile_angle):
         """

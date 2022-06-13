@@ -17,7 +17,7 @@ struct tank* tank_alloc(){
     return self;
 }
 
-void tank_set_values(struct tank* self, uint32_t player_id, float x, float y, float tank_angle, float hp, float turret_angle, uint32_t tank_version){
+void tank_set_values(struct tank* self, uint32_t player_id, float x, float y, float tank_angle, float hp, float turret_angle, uint32_t tank_version, bool shield_active){
     self->player_id = player_id;
     self->x = x;
     self->y = y;
@@ -25,14 +25,16 @@ void tank_set_values(struct tank* self, uint32_t player_id, float x, float y, fl
     self->hp = hp;
     self->turret_angle = turret_angle;
     self->tank_version = tank_version;
+    self->shield_active = shield_active;
 }
 
-void tank_update(struct tank* self, float x, float y, float tank_angle, float hp, float turret_angle){
+void tank_update(struct tank* self, float x, float y, float tank_angle, float hp, float turret_angle, bool shield_active){
     self->x = x;
     self->y = y;
     self->tank_angle = tank_angle;
     self->hp = hp;
     self->turret_angle = turret_angle;
+    self->shield_active = shield_active;
 }
 
 void tank_free(struct tank *self){

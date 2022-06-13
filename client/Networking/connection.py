@@ -6,6 +6,7 @@ import select
 import constants
 from Networking.payload_configuration import PayloadConfiguration
 from Networking.payload_information import PayloadInformation
+from Networking.payload_client_preferences import PayloadClientPreferences
 
 
 class Connection:
@@ -53,6 +54,17 @@ class Connection:
         self._socket.close()
 
     # Sending part
+
+    def send_preferences(self, tank_version, tank_full_hp):
+        payload_out = PayloadClientPreferences(tank_version, tank_full_hp)
+        nsent = None
+        try:
+            nsent = self._socket.send(payload_out)
+        except ConnectionResetError as e:
+            self._game.show_server_full_or_busy_screen_and_exit()
+        if nsent:
+            return True
+        return False
 
     def send_disconnect_information(self):
         """

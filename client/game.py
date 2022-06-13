@@ -148,6 +148,9 @@ class Game:
         if not self._connection.establish_connection():
             self.show_server_full_or_busy_screen_and_exit()
             return False
+        tank_version = 0
+        tank_full_hp = 10.0
+        self._connection.send_preferences(tank_version, tank_full_hp)
         _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_configuration()
         if self._player_count == constants.configuration_receive_error:
             self.show_server_full_or_busy_screen_and_exit()

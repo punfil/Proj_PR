@@ -29,7 +29,7 @@ class Game:
         self._height = constants.window_height
         self._player_count = None
         self._my_player_id = None
-        self._tank_version = 0
+        self._tank_version = None
 
         # Connection related variables
         self._connection = None
@@ -127,6 +127,8 @@ class Game:
         self._server_address = self.load_default_ip()
         if self._server_address is None:
             self._server_address = constants.default_game_server_ip
+
+        self._tank_version = 0
 
         self._menu = pygame_menu.Menu("Tank simulator", constants.window_width, constants.window_height,
                                       theme=pygame_menu.themes.THEME_DARK)
@@ -358,7 +360,8 @@ class Game:
             pygame.display.flip()
             if time.time() - time_start > constants.server_full_or_busy_screen_display_time_sec:
                 finished = True
-
+	
+        self.save_default_ip(self._server_address)
         if self.setup():
             self.play()
 
@@ -381,7 +384,8 @@ class Game:
             if time.time() - time_start > constants.death_screen_display_time_sec:
                 finished = True
             self._clock.tick(constants.target_fps)
-
+	
+        self.save_default_ip(self._server_address)
         if self.setup():
             self.play()
 

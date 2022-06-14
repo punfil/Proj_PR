@@ -448,6 +448,7 @@ class Game:
         """
         tank = self.get_tank_with_player_id(player_id)
         if tank is not None:
+            tank.shield_deactivate()
             tank.turret.remove_all_projectiles()
             tank.turret.kill()
             tank.kill()

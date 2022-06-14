@@ -184,6 +184,8 @@ class Connection:
                     buff = self._socket.recv(sizeof(PayloadConfiguration))
                 except ConnectionResetError as e:
                     self._game.show_server_full_or_busy_screen()
+                except ConnectionAbortedError as e:
+                    self._game.show_server_full_or_busy_screen()
                 if buff:
                     payload_in = PayloadConfiguration.from_buffer_copy(buff)
                     return payload_in.width, payload_in.height, payload_in.background_scale, payload_in.player_count, payload_in.player_id, payload_in.tank_spawn_x, payload_in.tank_spawn_y, payload_in.map_number

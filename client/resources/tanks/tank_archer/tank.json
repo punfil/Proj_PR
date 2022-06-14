@@ -2,11 +2,11 @@
 	"texture": "./Pictures/tank_archer.png",
 	"turret": "./resources/tanks/tank_archer/turret.json",
 	"shield": "./resources/tanks/tank_archer/shield.json",
-	"hp": 10,
-	"max_speed": 150,
-	"acceleration": 150,
-	"deceleration": 150,
-	"drag": 200,
-	"turn_rate": 135,
-	"driftiness": 0.9
+	"hp": 7.5,
+	"max_speed": 200,
+	"acceleration": 175,
+	"deceleration": 175,
+	"drag": 275,
+	"turn_rate": 100,
+	"driftiness": 0.5
 }

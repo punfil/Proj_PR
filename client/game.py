@@ -151,7 +151,7 @@ class Game:
         if not self._connection.establish_connection():
             self.show_server_full_or_busy_screen()
             return False
-        tank_full_hp = 10.0
+        tank_full_hp = self.load_resource(constants.tank_versions[self._tank_version])["hp"]
         self._connection.send_preferences(self._tank_version, tank_full_hp)
         _, _, _, self._player_count, self._my_player_id, tank_spawn_x, tank_spawn_y, map_no = self._connection.receive_configuration()
         if self._player_count == constants.configuration_receive_error:
@@ -205,6 +205,53 @@ class Game:
                 return i
         return None
 
+    def swap_channels(self, surface, order):
+        """
+        Swaps RGB channels in pygame surface to a given order (e.g. [0,2,1] = RBG). Does not preserve alpha.
+        :param pygame.Surface surface: surface to swap channels
+        :param List[int] order: new order of channels
+        :return: pygame.Surface
+        """
+        arr = pygame.surfarray.array3d(surface)
+
+        red = arr[:, :, 0].copy()
+        green = arr[:, :, 1].copy()
+        blue = arr[:, :, 2].copy()
+
+        swaps = [red, green, blue]
+
+        arr[:, :, 0] = swaps[order[0]]
+        arr[:, :, 1] = swaps[order[1]]
+        arr[:, :, 2] = swaps[order[2]]
+
+        new_arr = arr
+
+        return pygame.surfarray.make_surface(new_arr)
+
+    def recolor_tank(self, tank):
+        """
+        Changes tank colors to match colors for a given player number
+        :param Tank tank: tank object to be recolored
+        :return: None
+        """
+        mask = pygame.Surface(tank.original_image.get_size()).convert_alpha()
+        mask.fill("#ffffff")
+        swap_order = constants.swap_colors[tank.player_no % len(constants.swap_colors)]
+
+        recolored = self.swap_channels(tank.original_image, swap_order)
+        new_image = tank.original_image.copy()
+        new_image.blit(mask, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+        new_image.blit(recolored, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        tank.original_image = new_image
+
+        mask = pygame.Surface(tank.turret.original_image.get_size()).convert_alpha()
+        mask.fill("#ffffff")
+        recolored = self.swap_channels(tank.turret.original_image, swap_order)
+        new_image = tank.turret.original_image.copy()
+        new_image.blit(mask, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+        new_image.blit(recolored, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        tank.turret.original_image = new_image
+
     def add_new_tank(self, player_id, x, y, tank_angle, tank_version):
         """
         Adds new tank according to the information received from the server
@@ -218,6 +265,9 @@ class Game:
         if tank_version not in constants.tank_versions:
             tank_version = 0
         tank = Tank(player_id, self, x, y, tank_angle, self.load_resource(constants.tank_versions[tank_version]))
+
+        self.recolor_tank(tank)
+
         self._tanks_sprites_group.add(tank)
         self._turrets_sprites_group.add(tank.turret)
         self._hp_bars_sprites_group.add(tank.hp_bar)

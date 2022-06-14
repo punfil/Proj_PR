@@ -23,6 +23,8 @@ shield_bar_height = 5
 shield_bar_y_offset = -30
 shield_bar_filled_color = "#0077ff"
 shield_bar_empty_color = "#cccccc"
+# tank colors (swapping rgb channels)
+swap_colors = [[1, 2, 0], [1, 0, 2], [0, 2, 1], [2, 1, 0], [2, 0, 1]]
 
 death_screen_display_time_sec = 3
 server_full_or_busy_screen_display_time_sec = 2

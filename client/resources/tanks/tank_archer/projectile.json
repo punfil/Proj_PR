@@ -1,6 +1,6 @@
 {
 	"texture": "./Pictures/projectile_arrow.png",
-	"speed": 500,
+	"speed": 800,
 	"damage": 5,
 	"lifetime": 2,
 	"explosion": "./resources/animations/arrow_explosion.json"

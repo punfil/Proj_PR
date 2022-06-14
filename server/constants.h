@@ -38,7 +38,7 @@
 //PLAYER 1 -> 10--19
 //...
 //PLAYER N -> MAX_PROJECTILES_PER_PLAYER*N -- MAX_PROJECTILES_PER_PLAYER(N+1)-1 //Calculated on the client side!
-#define MAX_PROJECTILES_PER_PLAYER 10
+#define MAX_PROJECTILES_PER_PLAYER 20
 
 //Tank settings
 #define DEFAULT_MAP_NUMBER 0

@@ -332,7 +332,8 @@ class Tank(pygame.sprite.Sprite):
             self._hp += value
             self._hp_bar.update_hp(self._hp)
         else:
-            self.offset_shield_hp(value)
+            pass  # shields are completely invulnerable for now
+            # self.offset_shield_hp(value)
 
     def offset_shield_hp(self, value):
         """

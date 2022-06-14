@@ -2,13 +2,13 @@
 	"texture": "./Pictures/turret_archer.png",
 	"ammo": "./resources/tanks/tank_archer/projectile.json",
 	"rotation_speed": 180,
-	"full_rotation": false,
-	"max_left_angle": 150,
-	"max_right_angle": 150,
-	"inaccuracy": 5,
-	"cooldown": 0.5,
+	"full_rotation": true,
+	"max_left_angle": 360,
+	"max_right_angle": 360,
+	"inaccuracy": 0,
+	"cooldown": 0.667,
 	"projectile_offsets": [
-		[0, 30, 0]
+		[0, 0, 0]
 	],
 	"projectiles_per_shot": 1
 }

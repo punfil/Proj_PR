@@ -1,10 +1,10 @@
 {
 	"texture": "./Pictures/turret_laser.png",
 	"ammo": "./resources/tanks/tank_laser/projectile.json",
-	"rotation_speed": 150,
+	"rotation_speed": 0,
 	"full_rotation": false,
-	"max_left_angle": 150,
-	"max_right_angle": 150,
+	"max_left_angle": 1,
+	"max_right_angle": 1,
 	"inaccuracy": 1,
 	"cooldown": 1,
 	"projectile_offsets": [

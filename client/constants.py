@@ -35,7 +35,7 @@ object_collision_cooldown = 0.5
 object_collision_speed_multiplier = 0.5
 
 """Projectiles constants"""
-max_projectile_count = 10
+max_projectile_count = 20
 projectile_exists = 1
 projectile_not_exists = 0
 

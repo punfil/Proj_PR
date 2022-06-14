@@ -220,10 +220,9 @@ struct information* receive_single_information(int *sock){
 
 //Alows to receive one client preference struct. Memory allocation happends here!
 struct client_preferences* receive_single_client_preference(int* sock){
-	char buff[RECEIVER_BUFFER_SIZE];
-	bzero(buff, RECEIVER_BUFFER_SIZE);
-	int available;
-	int nread=read(*sock, buff, RECEIVER_BUFFER_SIZE);
+	char buff[sizeof(struct client_preferences)];
+	bzero(buff, sizeof(struct client_preferences));
+	int nread=read(*sock, buff, sizeof(struct client_preferences));
 	if (nread <=0){
 		return NULL; //Didn't receive any information
 	}
@@ -425,20 +424,18 @@ void* connection_handler(void* arg){
 			printf("##ERROR: Error allocating memory!\n");
 			return NULL;
 		}
-		
+
+		*csockets[current_player_id] = temp_socket;
+		//Receive client options and preferences
+		struct client_preferences* options = receive_single_client_preference(csockets[current_player_id]);
+		tank_set_values(tanks_in_game[current_player_id], current_player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, options->tank_max_hp, DEFAULT_TANK_TURRET_ANGLE, options->tank_version, SHIELD_INACTIVE);
+		client_preferences_free(options);
 
 		pthread_mutex_lock(&players_count_mutex);
 		increment_players_count(&players_count);
 		pthread_mutex_unlock(&players_count_mutex);
 
 		pthread_mutex_lock(&(players_mutexes[current_player_id]));
-
-		*csockets[current_player_id] = temp_socket;
-		
-		//Receive client options and preferences
-		struct client_preferences* options = receive_single_client_preference(csockets[current_player_id]);
-		tank_set_values(tanks_in_game[current_player_id], current_player_id, TANK_SPAWN_POINT_X, TANK_SPAWN_POINT_Y, DEFAULT_TANK_ANGLE, options->tank_max_hp, DEFAULT_TANK_TURRET_ANGLE, options->tank_version, SHIELD_INACTIVE);
-		client_preferences_free(options);
 		
 		memcpy(clients[current_player_id], &temp_information, sizeof(struct sockaddr_in));
 		
@@ -451,6 +448,7 @@ void* connection_handler(void* arg){
 		
 		//Send information to all existing clients that new player has joined
 		send_info_new_player_connected(current_player_id, tanks_in_game[current_player_id], player_ids);
+		set_id_used(current_player_id, player_ids);
 
 		//Create new thread to serve this client
 		int result = pthread_create(&clients_threads[current_player_id], NULL, player_connection_handler, (void*)for_threads[current_player_id]);

@@ -18,11 +18,14 @@ int* generate_id_list(int count){
 int return_free_id(int* all_ids){
     for (int i=0;i<MAX_PLAYERS;i++){
         if (all_ids[i] != USED_ID){
-            all_ids[i] = USED_ID;
             return i;
         }
     }
     return USED_ID;
+}
+
+void set_id_used(int id, int * all_ids){
+    all_ids[id] = USED_ID;
 }
 
 void set_id_available(int* all_ids, int which){
